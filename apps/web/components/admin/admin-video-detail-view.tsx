@@ -87,6 +87,36 @@ function badgeTone(value: string) {
   }
 }
 
+function homeVisibilityHint(video: {
+  isPubliclyVisible: boolean;
+  visibility: string;
+  processingStatus: string;
+  moderationState: string;
+  publishedAt: string | null;
+}) {
+  if (video.isPubliclyVisible) {
+    return "Cette vidéo est éligible à l’accueil.";
+  }
+
+  if (video.visibility !== "PUBLIC") {
+    return "Elle n’apparaît pas dans l’accueil tant que sa visibilité n’est pas publique.";
+  }
+
+  if (video.processingStatus !== "READY") {
+    return "Elle n’apparaît pas dans l’accueil tant que le traitement n’est pas terminé.";
+  }
+
+  if (video.moderationState === "BLOCKED") {
+    return "Elle n’apparaît pas dans l’accueil tant qu’elle reste bloquée.";
+  }
+
+  if (!video.publishedAt) {
+    return "Elle n’apparaît pas dans l’accueil tant qu’elle n’est pas publiée.";
+  }
+
+  return "Cette vidéo n’est pas encore éligible à l’accueil.";
+}
+
 function AdminVideoDetailSkeleton() {
   return (
     <div className="space-y-6">
@@ -262,6 +292,9 @@ export function AdminVideoDetailView({ videoId }: { videoId: string }) {
                 </p>
               </div>
             </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              {homeVisibilityHint(video)}
+            </p>
 
             {video.description ? (
               <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
@@ -299,8 +332,7 @@ export function AdminVideoDetailView({ videoId }: { videoId: string }) {
               {MODERATION_STATES.map((state) => {
                 const active = moderationState === state;
                 const disabled =
-                  mutation.isPending ||
-                  (state === video.moderationState && notes.trim().length === 0);
+                  mutation.isPending || state === video.moderationState;
 
                 return (
                   <Button
@@ -339,7 +371,7 @@ export function AdminVideoDetailView({ videoId }: { videoId: string }) {
               className="mt-3 h-9"
             />
             <p className="mt-2 text-xs text-muted-foreground">
-              La note sera enregistrée avec la prochaine action de modération.
+              La note est facultative et sera ajoutée seulement si tu déclenches une action.
             </p>
 
             {mutation.isError ? (

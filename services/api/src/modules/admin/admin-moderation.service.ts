@@ -266,10 +266,19 @@ export async function patchAdminVideoModeration(
     notes?.trim() ||
     `Modération → ${moderationState} (vidéo ${video.slug})`;
 
+  const shouldPublishNow =
+    moderationState === VideoModerationState.NONE &&
+    video.processingStatus === VideoProcessingStatus.READY &&
+    video.visibility === VideoVisibility.PUBLIC &&
+    !video.publishedAt;
+
   await prisma.$transaction([
     prisma.video.update({
       where: { id: videoId },
-      data: { moderationState },
+      data: {
+        moderationState,
+        ...(shouldPublishNow ? { publishedAt: new Date() } : {}),
+      },
     }),
     prisma.moderationAction.create({
       data: {

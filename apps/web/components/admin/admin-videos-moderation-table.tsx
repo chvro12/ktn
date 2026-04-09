@@ -59,9 +59,6 @@ function VideoModRow({ video }: { video: AdminVideoModRow }) {
     setModerationState(video.moderationState);
   }, [video.id, video.moderationState]);
 
-  const dirty =
-    moderationState !== video.moderationState || notes.trim().length > 0;
-
   const mutation = useMutation({
     mutationFn: (nextState: string) =>
       patchAdminVideoModeration(video.id, {
@@ -118,9 +115,7 @@ function VideoModRow({ video }: { video: AdminVideoModRow }) {
         <div className="mb-2 flex flex-wrap gap-2">
           {MOD_STATES.map((state) => {
             const active = moderationState === state;
-            const disabled =
-              mutation.isPending ||
-              (state === video.moderationState && notes.trim().length === 0);
+            const disabled = mutation.isPending || state === video.moderationState;
 
             return (
               <Button
@@ -161,11 +156,9 @@ function VideoModRow({ video }: { video: AdminVideoModRow }) {
           onChange={(e) => setNotes(e.target.value)}
           className="mb-2 h-8 max-w-[14rem] text-xs"
         />
-        {dirty ? (
-          <p className="text-xs text-muted-foreground">
-            La note sera ajoutée à la prochaine action.
-          </p>
-        ) : null}
+        <p className="text-xs text-muted-foreground">
+          La note est facultative et sera ajoutée seulement si tu déclenches une action.
+        </p>
         {mutation.isError ? (
           <p className="mt-1 max-w-[12rem] text-xs text-destructive">
             {mutation.error instanceof Error

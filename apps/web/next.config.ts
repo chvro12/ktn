@@ -35,6 +35,40 @@ if (process.env.VERCEL === "1") {
   }
 }
 
+/**
+ * Construit les patterns autorisés pour next/image à partir des URLs d’API configurées.
+ * Couvre : localhost:4000 (dev), PUBLIC_MEDIA_BASE_URL et NEXT_PUBLIC_API_URL (prod).
+ */
+function buildMediaRemotePatterns(): import("next").RemotePattern[] {
+  const candidates = [
+    process.env.PUBLIC_MEDIA_BASE_URL?.trim(),
+    process.env.NEXT_PUBLIC_API_URL?.trim(),
+    "http://localhost:4000",
+  ].filter(Boolean) as string[];
+
+  const seen = new Set<string>();
+  const patterns: import("next").RemotePattern[] = [];
+
+  for (const raw of candidates) {
+    try {
+      const u = new URL(raw.replace(/\/$/, ""));
+      const key = `${u.protocol}//${u.hostname}:${u.port}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      patterns.push({
+        protocol: u.protocol.replace(":", "") as "http" | "https",
+        hostname: u.hostname,
+        port: u.port || undefined,
+        pathname: "/v1/media/**",
+      });
+    } catch {
+      // URL invalide, ignorée
+    }
+  }
+
+  return patterns;
+}
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: monorepoRoot,
@@ -46,6 +80,7 @@ const nextConfig: NextConfig = {
         hostname: "picsum.photos",
         pathname: "/**",
       },
+      ...buildMediaRemotePatterns(),
     ],
   },
 };

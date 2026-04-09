@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { copyFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { PrismaClient } from "@prisma/client";
-import { VideoProcessingStatus } from "@prisma/client";
+import { VideoProcessingStatus, VideoVisibility } from "@prisma/client";
 
 export type MediaProcessDeps = {
   prisma: PrismaClient;
@@ -133,7 +133,10 @@ export async function processUploadedVideo(
           hlsUrl,
           playbackManifestKey: `hls/${name}`,
           durationSec: dur ?? video.durationSec ?? undefined,
-          publishedAt: !video.publishedAt ? new Date() : video.publishedAt,
+          publishedAt:
+            !video.publishedAt && video.visibility !== VideoVisibility.PRIVATE
+              ? new Date()
+              : video.publishedAt ?? undefined,
         },
       });
       return true;
@@ -204,7 +207,10 @@ export async function processUploadedVideo(
         playbackManifestKey: "hls/stream.m3u8",
         durationSec: dur ?? undefined,
         thumbnailUrl: thumbUrl,
-        publishedAt: !video.publishedAt ? new Date() : video.publishedAt,
+        publishedAt:
+          !video.publishedAt && video.visibility !== VideoVisibility.PRIVATE
+            ? new Date()
+            : video.publishedAt ?? undefined,
       },
     });
     return true;

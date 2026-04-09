@@ -1,0 +1,22 @@
+{
+  "name": "katante",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "postinstall": "pnpm db:generate",
+    "dev": "pnpm --parallel --filter @katante/api --filter @katante/web run dev",
+    "dev:api": "pnpm --filter @katante/api dev",
+    "dev:web": "pnpm --filter @katante/web dev",
+    "dev:worker": "pnpm --filter @katante/worker-media dev",
+    "db:generate": "pnpm --filter @katante/db generate",
+    "db:migrate": "dotenv -e ./.env -- pnpm --filter @katante/db migrate:dev",
+    "db:migrate:deploy": "dotenv -e ./.env -- pnpm --filter @katante/db migrate:deploy",
+    "db:studio": "dotenv -e ./.env -- pnpm --filter @katante/db studio",
+    "db:seed": "dotenv -e ./.env -- pnpm --filter @katante/db seed",
+    "build": "pnpm run -r --if-present build",
+    "lint": "pnpm run -r --if-present lint"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^8.0.0"
+  }
+}

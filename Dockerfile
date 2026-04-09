@@ -11,19 +11,21 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/db/package.json             ./packages/db/
 COPY packages/db/prisma/                  ./packages/db/prisma/
 COPY packages/media-process/package.json  ./packages/media-process/
+# Le postinstall racine build aussi media-process (tsc) → source requise avant install
+COPY packages/media-process/tsconfig.json ./packages/media-process/
+COPY packages/media-process/src/          ./packages/media-process/src/
 COPY services/api/package.json            ./services/api/
 COPY workers/media/package.json           ./workers/media/
 
-# Install complet (dev inclus) — le postinstall génère le client Prisma
+# Install complet — postinstall : prisma generate + build media-process
 RUN pnpm install --frozen-lockfile
 
-# Sources
-COPY packages/   ./packages/
-COPY services/   ./services/
-COPY workers/    ./workers/
+# Sources restantes (api, workers)
+COPY services/ ./services/
+COPY workers/  ./workers/
 
-# Compile @katante/media-process puis @katante/api
-RUN pnpm run build:api
+# Compile @katante/api (media-process déjà compilé par postinstall)
+RUN pnpm --filter @katante/api build
 
 # ─── Runtime ─────────────────────────────────────────────────────────────────
 FROM node:22-alpine

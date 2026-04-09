@@ -212,13 +212,6 @@ export async function publishStudioVideo(userId: string, videoId: string) {
       "La vidéo n’est pas prête à être publiée",
     );
   }
-  if (v.visibility === VideoVisibility.PRIVATE) {
-    throw new AppError(
-      400,
-      "PRIVATE_VIDEO",
-      "Passe la visibilité à public ou non répertoriée pour publier",
-    );
-  }
   if (v.publishedAt) {
     return { ok: true as const, already: true };
   }

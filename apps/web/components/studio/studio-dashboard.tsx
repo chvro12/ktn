@@ -1,20 +1,15 @@
 "use client";
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   CircleCheckBig,
   Clock3,
-  LoaderCircle,
   RefreshCw,
   TriangleAlert,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,10 +19,6 @@ import { apiFetch } from "@/lib/api";
 type MeResponse =
   | { user: { displayName: string } }
   | { error: { code: string; message: string } };
-
-type PublishApiError = {
-  error?: { message?: string };
-};
 
 type StudioVideoRow = {
   id: string;
@@ -71,7 +62,7 @@ const STATUS_META: Record<string, { label: string; tone: string; hint: string }>
   UPLOADED: {
     label: "En attente",
     tone: "border-border/80 bg-muted/30 text-foreground",
-    hint: "Le worker prendra la vidéo en charge bientôt.",
+    hint: "Transcodage automatique après l’envoi.",
   },
   PROCESSING: {
     label: "Traitement",
@@ -81,7 +72,7 @@ const STATUS_META: Record<string, { label: string; tone: string; hint: string }>
   READY: {
     label: "Prête",
     tone: "border-border/80 bg-muted/30 text-foreground",
-    hint: "Lecture disponible, publication selon visibilité.",
+    hint: "Les vidéos publiques apparaissent sur l’accueil sans action supplémentaire.",
   },
   FAILED: {
     label: "Échec",
@@ -95,6 +86,12 @@ function formatVisibility(value: string): string {
   if (value === "UNLISTED") return "Non répertoriée";
   if (value === "PRIVATE") return "Privée";
   return value;
+}
+
+function feedStatusLabel(video: StudioVideoRow): string {
+  if (video.visibility === "PUBLIC") return "Sur l’accueil";
+  if (video.visibility === "UNLISTED") return "Pas dans le fil (lien seulement)";
+  return "Privée (pas sur l’accueil)";
 }
 
 function StudioDashboardSkeleton() {
@@ -126,11 +123,6 @@ function StudioDashboardSkeleton() {
 
 export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const [feedback, setFeedback] = useState<{
-    tone: "success" | "error";
-    message: string;
-  } | null>(null);
 
   const meQuery = useQuery({ queryKey: ["auth", "me"], queryFn: fetchMe });
   const loggedIn = Boolean(meQuery.data && "user" in meQuery.data);
@@ -149,34 +141,6 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
     },
   });
 
-  const publishMutation = useMutation({
-    mutationFn: async (videoId: string) => {
-      const res = await apiFetch(
-        `/v1/studio/videos/${encodeURIComponent(videoId)}/publish`,
-        { method: "POST" },
-      );
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as PublishApiError | null;
-        throw new Error(body?.error?.message ?? "Publication impossible");
-      }
-    },
-    onSuccess: async () => {
-      setFeedback({
-        tone: "success",
-        message: "La vidéo est maintenant en ligne et devrait apparaître dans l’accueil.",
-      });
-      await queryClient.invalidateQueries({ queryKey: ["studio", "videos"] });
-      router.refresh();
-    },
-    onError: (error) => {
-      setFeedback({
-        tone: "error",
-        message:
-          error instanceof Error ? error.message : "Publication impossible",
-      });
-    },
-  });
-
   useEffect(() => {
     if (meQuery.isPending) return;
     if (!loggedIn) router.replace("/login?next=/studio");
@@ -191,7 +155,12 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
       processing: videos.filter((video) =>
         ["UPLOADING", "UPLOADED", "PROCESSING"].includes(video.processingStatus),
       ).length,
-      published: videos.filter((video) => video.publishedAt).length,
+      onHome: videos.filter(
+        (video) =>
+          video.processingStatus === "READY" &&
+          video.visibility === "PUBLIC" &&
+          video.publishedAt,
+      ).length,
     };
   }, [listQuery.data?.videos]);
 
@@ -217,7 +186,8 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
               Studio
             </h1>
             <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-              Upload, traitement, publication et suivi des statuts depuis un seul espace.
+              Upload et traitement : les vidéos publiques vont sur l’accueil dès qu’elles
+              sont prêtes, sans validation manuelle.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -256,19 +226,6 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
           </div>
         ) : null}
 
-        {feedback ? (
-          <div
-            className={cn(
-              "rounded-[1.5rem] px-4 py-4 text-sm",
-              feedback.tone === "success"
-                ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
-                : "border border-destructive/20 bg-destructive/5 text-destructive",
-            )}
-          >
-            {feedback.message}
-          </div>
-        ) : null}
-
         {listQuery.isPending ? (
           <StudioDashboardSkeleton />
         ) : listQuery.isError ? (
@@ -287,10 +244,7 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
                   variant="outline"
                   size="sm"
                   className="mt-4 rounded-full"
-                  onClick={() => {
-                    setFeedback(null);
-                    void listQuery.refetch();
-                  }}
+                  onClick={() => void listQuery.refetch()}
                 >
                   <RefreshCw className="size-3.5" aria-hidden />
                   Réessayer
@@ -337,12 +291,12 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-border/80 bg-card p-4">
-                <p className="text-xs text-muted-foreground">En ligne</p>
+                <p className="text-xs text-muted-foreground">Sur l’accueil</p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight">
-                  {stats.published}
+                  {stats.onHome}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  visible{stats.published > 1 ? "s" : ""} par le public
+                  publique{stats.onHome > 1 ? "s" : ""} et prête{stats.onHome > 1 ? "s" : ""}
                 </p>
               </div>
             </div>
@@ -371,8 +325,6 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
                 {listQuery.data?.videos.map((video) => {
                   const meta =
                     STATUS_META[video.processingStatus] ?? STATUS_META.DRAFT;
-                  const publishPending = publishMutation.isPending &&
-                    publishMutation.variables === video.id;
 
                   return (
                     <li key={video.id}>
@@ -399,9 +351,11 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
                               <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
                                 {formatVisibility(video.visibility)}
                               </span>
-                              <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
-                                {video.publishedAt ? "Déjà publiée" : "Pas encore publiée"}
-                              </span>
+                              {video.processingStatus === "READY" ? (
+                                <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                                  {feedStatusLabel(video)}
+                                </span>
+                              ) : null}
                               {["UPLOADING", "UPLOADED", "PROCESSING"].includes(
                                 video.processingStatus,
                               ) ? (
@@ -414,29 +368,7 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
                           </div>
 
                           <div className="flex flex-wrap gap-2">
-                            {video.processingStatus === "READY" && !video.publishedAt ? (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                className="rounded-full"
-                                disabled={publishPending}
-                                onClick={() => {
-                                  setFeedback(null);
-                                  publishMutation.mutate(video.id);
-                                }}
-                              >
-                                {publishPending ? (
-                                  <>
-                                    <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
-                                    Publication…
-                                  </>
-                                ) : (
-                                  "Publier maintenant"
-                                )}
-                              </Button>
-                            ) : null}
-                            {video.processingStatus === "READY" && video.publishedAt ? (
+                            {video.processingStatus === "READY" ? (
                               <Link
                                 href={`/video/${video.slug}-${video.id}`}
                                 className={cn(

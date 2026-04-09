@@ -11,6 +11,7 @@ import {
 } from "@/lib/format-media";
 import { VideoGrid } from "@/components/video/video-grid";
 import { VideoDescriptionCollapsible } from "@/components/watch/video-description-collapsible";
+import { ReportVideoButton } from "@/components/watch/report-video-button";
 import { ShareLinkButton } from "@/components/watch/share-link-button";
 import { WatchEngagement } from "@/components/watch/watch-engagement";
 import { WatchVideoPlayer } from "@/components/watch/watch-video-player";
@@ -67,10 +68,10 @@ export default async function WatchPage({ params }: Props) {
 
   return (
     <AppShell>
-      <div className="grid gap-8 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_420px]">
-        <div className="min-w-0 space-y-4">
+      <div className="grid gap-6 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_420px]">
+        <div className="min-w-0 space-y-4 sm:space-y-5">
           <div
-            className="relative aspect-video w-full overflow-hidden rounded-lg bg-black ring-1 ring-foreground/10"
+            className="relative aspect-video w-full overflow-hidden rounded-[1.25rem] border border-border/70 bg-black shadow-[0_30px_80px_-50px_rgba(0,0,0,0.55)] sm:rounded-[1.75rem]"
             aria-label="Lecteur vidéo"
           >
             {video.hlsUrl ? (
@@ -97,49 +98,64 @@ export default async function WatchPage({ params }: Props) {
               </>
             )}
           </div>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-semibold leading-snug tracking-tight">
-                {video.title}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                <span>{formatViewCount(video.viewsCount)}</span>
-                <span aria-hidden>·</span>
-                <span>{formatPublishedShort(video.publishedAt)}</span>
-                {video.durationSec != null ? (
-                  <>
-                    <span aria-hidden>·</span>
-                    <span className="tabular-nums">
+          <div className="rounded-[1.5rem] border border-border/70 bg-card/80 p-4 shadow-[0_20px_60px_-45px_rgba(23,23,23,0.35)] sm:rounded-[1.75rem] sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl font-semibold leading-snug tracking-tight text-balance">
+                  {video.title}
+                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                    {formatViewCount(video.viewsCount)}
+                  </span>
+                  <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                    {formatPublishedShort(video.publishedAt)}
+                  </span>
+                  {video.durationSec != null ? (
+                    <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 tabular-nums">
                       {formatDurationSec(video.durationSec)}
                     </span>
-                  </>
-                ) : null}
+                  ) : null}
+                </div>
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-stretch">
+                <ShareLinkButton />
+                <ReportVideoButton videoId={video.id} />
               </div>
             </div>
-            <ShareLinkButton />
-          </div>
-          <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
-            <Link
-              href={`/channel/${video.channel.handle}`}
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-lg focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring sm:flex-initial"
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground ring-1 ring-border">
-                {video.channel.name.slice(0, 1).toUpperCase()}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium">
-                  {video.channel.name}
+            <div className="mt-5 flex flex-col gap-3 border-t border-border/70 pt-5 sm:flex-row sm:flex-wrap sm:items-center">
+              <Link
+                href={`/channel/${video.channel.handle}`}
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-border/70 bg-background/70 px-3 py-3 transition hover:bg-background focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring sm:flex-initial sm:min-w-[16rem]"
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-medium text-muted-foreground ring-1 ring-border">
+                  {video.channel.avatarUrl ? (
+                    <Image
+                      src={video.channel.avatarUrl}
+                      alt=""
+                      width={44}
+                      height={44}
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    video.channel.name.slice(0, 1).toUpperCase()
+                  )}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  @{video.channel.handle}
-                  {video.channel.verified ? " · vérifiée" : ""}
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">
+                    {video.channel.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    @{video.channel.handle}
+                    {video.channel.verified ? " · vérifiée" : ""}
+                  </span>
                 </span>
-              </span>
-            </Link>
-            <ChannelSubscribe
-              handle={video.channel.handle}
-              initialSubscriberCount={video.channel.subscriberCount}
-            />
+              </Link>
+              <ChannelSubscribe
+                handle={video.channel.handle}
+                initialSubscriberCount={video.channel.subscriberCount}
+              />
+            </div>
           </div>
           {video.description ? (
             <VideoDescriptionCollapsible text={video.description} />
@@ -148,22 +164,47 @@ export default async function WatchPage({ params }: Props) {
             slugId={`${video.slug}-${video.id}`}
             initialLikesCount={video.likesCount}
           />
-        </div>
-        <aside className="hidden min-h-[200px] min-w-0 lg:block">
-          <h2 className="text-sm font-medium text-foreground">
-            Autres vidéos · {video.channel.name}
-          </h2>
-          <div className="mt-4">
+          <section className="space-y-4 lg:hidden">
+            <div>
+              <h2 className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                Autres vidéos
+              </h2>
+              <p className="mt-1 text-lg font-semibold tracking-tight">
+                {video.channel.name}
+              </p>
+            </div>
             {relatedVideos.length > 0 ? (
               <VideoGrid
                 items={relatedVideos}
                 emptyMessage="Aucune autre vidéo pour l’instant."
               />
             ) : (
-              <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+              <p className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
                 Aucune autre vidéo publiée sur cette chaîne pour l’instant.
               </p>
             )}
+          </section>
+        </div>
+        <aside className="hidden min-h-[200px] min-w-0 lg:block">
+          <div className="rounded-[1.75rem] border border-border/70 bg-card/70 p-5 shadow-[0_20px_60px_-45px_rgba(23,23,23,0.32)]">
+            <h2 className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              Autres vidéos
+            </h2>
+            <p className="mt-2 text-lg font-semibold tracking-tight text-foreground">
+              {video.channel.name}
+            </p>
+            <div className="mt-4">
+              {relatedVideos.length > 0 ? (
+                <VideoGrid
+                  items={relatedVideos}
+                  emptyMessage="Aucune autre vidéo pour l’instant."
+                />
+              ) : (
+                <p className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  Aucune autre vidéo publiée sur cette chaîne pour l’instant.
+                </p>
+              )}
+            </div>
           </div>
         </aside>
       </div>

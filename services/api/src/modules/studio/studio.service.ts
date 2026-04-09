@@ -180,6 +180,16 @@ export async function patchStudioVideo(
   }
   if (patch.visibility !== undefined) data.visibility = patch.visibility;
 
+  const nextVisibility = patch.visibility ?? v.visibility;
+  if (
+    patch.visibility !== undefined &&
+    v.processingStatus === VideoProcessingStatus.READY &&
+    !v.publishedAt &&
+    nextVisibility !== VideoVisibility.PRIVATE
+  ) {
+    data.publishedAt = new Date();
+  }
+
   if (Object.keys(data).length === 0) {
     return { ok: true as const };
   }

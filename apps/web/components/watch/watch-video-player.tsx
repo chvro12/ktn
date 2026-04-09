@@ -169,7 +169,7 @@ export function WatchVideoPlayer({
   return (
     <video
       ref={videoRef}
-      className="h-full w-full"
+      className="h-full w-full bg-black object-contain"
       controls
       playsInline
       poster={poster ?? undefined}

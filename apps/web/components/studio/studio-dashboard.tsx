@@ -1,11 +1,24 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  CircleCheckBig,
+  Clock3,
+  FileVideo,
+  LoaderCircle,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 
@@ -13,10 +26,9 @@ type MeResponse =
   | { user: { displayName: string } }
   | { error: { code: string; message: string } };
 
-async function fetchMe(): Promise<MeResponse> {
-  const res = await apiFetch("/v1/auth/me");
-  return res.json() as Promise<MeResponse>;
-}
+type PublishApiError = {
+  error?: { message?: string };
+};
 
 type StudioVideoRow = {
   id: string;
@@ -28,6 +40,11 @@ type StudioVideoRow = {
   updatedAt: string;
   hlsUrl: string | null;
 };
+
+async function fetchMe(): Promise<MeResponse> {
+  const res = await apiFetch("/v1/auth/me");
+  return res.json() as Promise<MeResponse>;
+}
 
 async function fetchStudioList(): Promise<{
   channelId: string | null;
@@ -41,17 +58,83 @@ async function fetchStudioList(): Promise<{
   }>;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "Brouillon",
-  UPLOADING: "Envoi…",
-  UPLOADED: "File d’attente",
-  PROCESSING: "Traitement…",
-  READY: "Prête",
-  FAILED: "Échec",
+const STATUS_META: Record<
+  string,
+  { label: string; tone: string; hint: string }
+> = {
+  DRAFT: {
+    label: "Brouillon",
+    tone: "border-border/70 bg-background/70 text-muted-foreground",
+    hint: "Métadonnées prêtes, fichier pas encore envoyé.",
+  },
+  UPLOADING: {
+    label: "Envoi",
+    tone: "border-foreground/10 bg-foreground/5 text-foreground",
+    hint: "Le fichier arrive sur le serveur.",
+  },
+  UPLOADED: {
+    label: "En attente",
+    tone: "border-amber-200 bg-amber-50 text-amber-700",
+    hint: "Le worker prendra la vidéo en charge bientôt.",
+  },
+  PROCESSING: {
+    label: "Traitement",
+    tone: "border-sky-200 bg-sky-50 text-sky-700",
+    hint: "Encodage, miniature et préparation du player.",
+  },
+  READY: {
+    label: "Prête",
+    tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    hint: "Lecture disponible, publication selon visibilité.",
+  },
+  FAILED: {
+    label: "Échec",
+    tone: "border-destructive/20 bg-destructive/5 text-destructive",
+    hint: "Le fichier devra être renvoyé.",
+  },
 };
 
-export function StudioDashboard() {
+function formatVisibility(value: string): string {
+  if (value === "PUBLIC") return "Publique";
+  if (value === "UNLISTED") return "Non répertoriée";
+  if (value === "PRIVATE") return "Privée";
+  return value;
+}
+
+function StudioDashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-36 rounded-full" />
+          <Skeleton className="h-4 w-72 max-w-full" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-36 rounded-full" />
+          <Skeleton className="h-10 w-24 rounded-full" />
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Skeleton key={index} className="h-24 rounded-[1.5rem]" />
+        ))}
+      </div>
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Skeleton key={index} className="h-28 rounded-[1.5rem]" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [feedback, setFeedback] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const meQuery = useQuery({ queryKey: ["auth", "me"], queryFn: fetchMe });
   const loggedIn = Boolean(meQuery.data && "user" in meQuery.data);
@@ -60,6 +143,42 @@ export function StudioDashboard() {
     queryKey: ["studio", "videos"],
     queryFn: fetchStudioList,
     enabled: loggedIn && !meQuery.isPending,
+    refetchInterval: (query) => {
+      const rows = query.state.data?.videos ?? [];
+      return rows.some((row) =>
+        ["UPLOADING", "UPLOADED", "PROCESSING"].includes(row.processingStatus),
+      )
+        ? 4000
+        : false;
+    },
+  });
+
+  const publishMutation = useMutation({
+    mutationFn: async (videoId: string) => {
+      const res = await apiFetch(
+        `/v1/studio/videos/${encodeURIComponent(videoId)}/publish`,
+        { method: "POST" },
+      );
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as PublishApiError | null;
+        throw new Error(body?.error?.message ?? "Publication impossible");
+      }
+    },
+    onSuccess: async () => {
+      setFeedback({
+        tone: "success",
+        message: "La vidéo est maintenant en ligne et devrait apparaître dans l’accueil.",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["studio", "videos"] });
+      router.refresh();
+    },
+    onError: (error) => {
+      setFeedback({
+        tone: "error",
+        message:
+          error instanceof Error ? error.message : "Publication impossible",
+      });
+    },
   });
 
   useEffect(() => {
@@ -67,10 +186,23 @@ export function StudioDashboard() {
     if (!loggedIn) router.replace("/login?next=/studio");
   }, [meQuery.isPending, loggedIn, router]);
 
+  const uploadedVideo = listQuery.data?.videos.find((video) => video.id === newVideoId);
+
+  const stats = useMemo(() => {
+    const videos = listQuery.data?.videos ?? [];
+    return {
+      total: videos.length,
+      processing: videos.filter((video) =>
+        ["UPLOADING", "UPLOADED", "PROCESSING"].includes(video.processingStatus),
+      ).length,
+      published: videos.filter((video) => video.publishedAt).length,
+    };
+  }, [listQuery.data?.videos]);
+
   if (meQuery.isPending || !loggedIn) {
     return (
       <AppShell>
-        <p className="text-sm text-muted-foreground">Chargement…</p>
+        <StudioDashboardSkeleton />
       </AppShell>
     );
   }
@@ -82,113 +214,264 @@ export function StudioDashboard() {
 
   return (
     <AppShell>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-lg font-semibold tracking-tight">Studio</h1>
-            <p className="text-sm text-muted-foreground">
-              Gère tes vidéos : import, traitement et publication.
-            </p>
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              <FileVideo className="size-3.5" aria-hidden />
+              Studio
+            </div>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                Gère tes vidéos sans friction
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Upload, traitement, publication et suivi des statuts depuis un
+                seul espace.
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/studio/upload"
-              className={cn(buttonVariants({ size: "sm" }))}
+              className={cn(buttonVariants({ size: "sm" }), "rounded-full")}
             >
               Importer une vidéo
             </Link>
             <Link
               href="/"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "rounded-full",
+              )}
             >
               Accueil
             </Link>
           </div>
         </div>
 
-        {listQuery.isError ? (
-          <p className="text-sm text-destructive">
-            Impossible de charger le studio.
-          </p>
-        ) : listQuery.isPending ? (
-          <p className="text-sm text-muted-foreground">Chargement des vidéos…</p>
+        {uploadedVideo ? (
+          <div className="flex items-start gap-3 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-800">
+            <CircleCheckBig className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <div>
+              <p className="font-medium">Vidéo envoyée</p>
+              <p className="mt-1">
+                {uploadedVideo.title} est maintenant dans le studio.
+                {["UPLOADING", "UPLOADED", "PROCESSING"].includes(
+                  uploadedVideo.processingStatus,
+                )
+                  ? " Le traitement continue automatiquement."
+                  : ""}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        {feedback ? (
+          <div
+            className={cn(
+              "rounded-[1.5rem] px-4 py-4 text-sm",
+              feedback.tone === "success"
+                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border border-destructive/20 bg-destructive/5 text-destructive",
+            )}
+          >
+            {feedback.message}
+          </div>
+        ) : null}
+
+        {listQuery.isPending ? (
+          <StudioDashboardSkeleton />
+        ) : listQuery.isError ? (
+          <div className="rounded-[1.75rem] border border-destructive/20 bg-destructive/5 p-5">
+            <div className="flex items-start gap-3">
+              <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
+              <div>
+                <p className="font-medium text-destructive">
+                  Impossible de charger le studio
+                </p>
+                <p className="mt-1 text-sm text-destructive/80">
+                  Réessaie pour récupérer la liste des vidéos et leurs statuts.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-4 rounded-full"
+                  onClick={() => {
+                    setFeedback(null);
+                    void listQuery.refetch();
+                  }}
+                >
+                  <RefreshCw className="size-3.5" aria-hidden />
+                  Réessayer
+                </Button>
+              </div>
+            </div>
+          </div>
         ) : noChannel ? (
-          <div className="rounded-lg border border-border bg-card/40 p-6 text-sm">
-            <p className="font-medium">Chaîne requise</p>
-            <p className="mt-2 text-muted-foreground">
-              Crée une chaîne pour accéder au studio.
+          <div className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6 shadow-[0_20px_55px_-45px_rgba(23,23,23,0.3)]">
+            <p className="text-lg font-semibold tracking-tight">Chaîne requise</p>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              Crée une chaîne pour commencer à publier et suivre tes vidéos depuis
+              le studio.
             </p>
             <Link
               href="/onboarding/channel"
-              className={cn(buttonVariants({ size: "sm" }), "mt-4 inline-flex")}
+              className={cn(
+                buttonVariants({ size: "sm" }),
+                "mt-4 inline-flex rounded-full",
+              )}
             >
               Créer une chaîne
             </Link>
           </div>
         ) : (
           <>
-            <ul className="space-y-2">
-              {listQuery.data?.videos.map((v) => (
-                <li key={v.id}>
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card/30 px-4 py-3 text-sm">
-                    <div className="min-w-0">
-                      <span className="font-medium">{v.title}</span>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {STATUS_LABEL[v.processingStatus] ?? v.processingStatus}{" "}
-                        · {v.visibility}
-                        {v.publishedAt ? " · en ligne" : ""}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {v.processingStatus === "READY" && !v.publishedAt ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={async () => {
-                            const res = await apiFetch(
-                              `/v1/studio/videos/${encodeURIComponent(v.id)}/publish`,
-                              { method: "POST" },
-                            );
-                            if (!res.ok) {
-                              const body = (await res.json().catch(() => null)) as {
-                                error?: { message?: string };
-                              } | null;
-                              window.alert(
-                                body?.error?.message ?? "Publication impossible",
-                              );
-                              return;
-                            }
-                            void listQuery.refetch();
-                          }}
-                        >
-                          Mettre en ligne
-                        </Button>
-                      ) : null}
-                      {v.processingStatus === "READY" && v.publishedAt ? (
-                        <Link
-                          href={`/video/${v.slug}-${v.id}`}
-                          className={cn(
-                            buttonVariants({ variant: "outline", size: "sm" }),
-                          )}
-                        >
-                          Voir
-                        </Link>
-                      ) : null}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4 shadow-[0_16px_45px_-40px_rgba(23,23,23,0.35)]">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Total
+                </p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight">
+                  {stats.total}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  vidéo{stats.total > 1 ? "s" : ""} dans ton studio
+                </p>
+              </div>
+              <div className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4 shadow-[0_16px_45px_-40px_rgba(23,23,23,0.35)]">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  En cours
+                </p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight">
+                  {stats.processing}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  import{stats.processing > 1 ? "s" : ""} ou traitement{stats.processing > 1 ? "s" : ""}
+                </p>
+              </div>
+              <div className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4 shadow-[0_16px_45px_-40px_rgba(23,23,23,0.35)]">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  En ligne
+                </p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight">
+                  {stats.published}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  visible{stats.published > 1 ? "s" : ""} par le public
+                </p>
+              </div>
+            </div>
+
             {listQuery.data?.videos.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
-                Aucune vidéo.{" "}
-                <Link href="/studio/upload" className="underline-offset-4 hover:underline">
+              <div className="rounded-[1.75rem] border border-dashed border-border/80 bg-card/55 px-6 py-12 text-center shadow-[0_16px_45px_-40px_rgba(23,23,23,0.28)]">
+                <p className="text-lg font-semibold tracking-tight">
+                  Aucune vidéo pour l’instant
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Commence par importer un premier fichier. Le studio suivra
+                  ensuite l’envoi et le traitement automatiquement.
+                </p>
+                <Link
+                  href="/studio/upload"
+                  className={cn(
+                    buttonVariants({ size: "sm" }),
+                    "mt-5 inline-flex rounded-full",
+                  )}
+                >
                   Importer un fichier
                 </Link>
-                .
-              </p>
-            ) : null}
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {listQuery.data?.videos.map((video) => {
+                  const meta =
+                    STATUS_META[video.processingStatus] ?? STATUS_META.DRAFT;
+                  const publishPending = publishMutation.isPending &&
+                    publishMutation.variables === video.id;
+
+                  return (
+                    <li key={video.id}>
+                      <div className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4 shadow-[0_16px_45px_-40px_rgba(23,23,23,0.28)] sm:p-5">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 space-y-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="truncate text-base font-semibold tracking-tight text-foreground">
+                                {video.title}
+                              </h2>
+                              <span
+                                className={cn(
+                                  "inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em]",
+                                  meta.tone,
+                                )}
+                              >
+                                {meta.label}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {meta.hint}
+                            </p>
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                              <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                                {formatVisibility(video.visibility)}
+                              </span>
+                              <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                                {video.publishedAt ? "Déjà publiée" : "Pas encore publiée"}
+                              </span>
+                              {["UPLOADING", "UPLOADED", "PROCESSING"].includes(
+                                video.processingStatus,
+                              ) ? (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                                  <Clock3 className="size-3" aria-hidden />
+                                  Actualisation auto active
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {video.processingStatus === "READY" && !video.publishedAt ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="rounded-full"
+                                disabled={publishPending}
+                                onClick={() => {
+                                  setFeedback(null);
+                                  publishMutation.mutate(video.id);
+                                }}
+                              >
+                                {publishPending ? (
+                                  <>
+                                    <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
+                                    Publication…
+                                  </>
+                                ) : (
+                                  "Publier maintenant"
+                                )}
+                              </Button>
+                            ) : null}
+                            {video.processingStatus === "READY" && video.publishedAt ? (
+                              <Link
+                                href={`/video/${video.slug}-${video.id}`}
+                                className={cn(
+                                  buttonVariants({ variant: "outline", size: "sm" }),
+                                  "rounded-full",
+                                )}
+                              >
+                                Voir la vidéo
+                              </Link>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </>
         )}
       </div>

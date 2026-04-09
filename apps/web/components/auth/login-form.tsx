@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -56,11 +57,17 @@ export function LoginForm() {
   });
 
   return (
-    <Card className="w-full max-w-md border-border shadow-none">
-      <CardHeader>
-        <CardTitle>Connexion</CardTitle>
+    <Card className="w-full max-w-md rounded-[2rem] border border-border/70 bg-card/90 py-0 shadow-[0_28px_80px_-48px_rgba(23,23,23,0.45)]">
+      <CardHeader className="px-6 pt-6 sm:px-7 sm:pt-7">
+        <div className="mb-2 inline-flex size-11 items-center justify-center rounded-2xl bg-foreground text-primary-foreground shadow-[0_18px_40px_-28px_rgba(0,0,0,0.6)]">
+          <ShieldCheck className="size-5" aria-hidden />
+        </div>
+        <CardTitle className="text-2xl font-semibold tracking-tight">
+          Connexion
+        </CardTitle>
         <CardDescription>
-          Utilise l’email et le mot de passe de ton compte Katante.
+          Retrouve ton studio, ta bibliothèque et tes vidéos en quelques
+          secondes.
         </CardDescription>
       </CardHeader>
       <form
@@ -73,10 +80,10 @@ export function LoginForm() {
           }
         })}
       >
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-6 pb-6 sm:px-7">
           {serverError ? (
             <p
-              className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              className="rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
               role="alert"
             >
               {serverError}
@@ -89,6 +96,7 @@ export function LoginForm() {
               type="email"
               autoComplete="email"
               aria-invalid={!!form.formState.errors.email}
+              className="h-11 rounded-xl border-border/70 bg-background/75"
               {...form.register("email")}
             />
             {form.formState.errors.email ? (
@@ -104,6 +112,7 @@ export function LoginForm() {
               type="password"
               autoComplete="current-password"
               aria-invalid={!!form.formState.errors.password}
+              className="h-11 rounded-xl border-border/70 bg-background/75"
               {...form.register("password")}
             />
             {form.formState.errors.password ? (
@@ -113,10 +122,10 @@ export function LoginForm() {
             ) : null}
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+        <CardFooter className="flex flex-col gap-3 rounded-b-[2rem] border-t border-border/70 bg-muted/35 px-6 py-5 sm:flex-row sm:justify-between sm:px-7">
           <Button
             type="submit"
-            className="w-full sm:w-auto"
+            className="h-11 w-full rounded-xl sm:w-auto"
             disabled={mutation.isPending}
           >
             {mutation.isPending ? "Connexion…" : "Se connecter"}

@@ -13,8 +13,26 @@ const prisma = new PrismaClient();
 async function main() {
   const email = "demo@katante.local";
   const password = "DemoKatante12345";
+  const adminEmail = "admin@katante.local";
+  const adminPassword = "AdminKatante12345";
 
   const passwordHash = bcrypt.hashSync(password, 12);
+  const adminPasswordHash = bcrypt.hashSync(adminPassword, 12);
+
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    create: {
+      email: adminEmail,
+      username: "katante_admin",
+      displayName: "Administrateur",
+      passwordHash: adminPasswordHash,
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+    },
+    update: {
+      role: UserRole.ADMIN,
+    },
+  });
 
   const user = await prisma.user.upsert({
     where: { email },
@@ -97,10 +115,14 @@ async function main() {
 
   // eslint-disable-next-line no-console
   console.info(
-    "Seed OK — compte",
+    "Seed OK — démo",
     email,
-    "/ mot de passe :",
+    "/",
     password,
+    "— admin",
+    adminEmail,
+    "/",
+    adminPassword,
     "— chaîne @",
     channel.handle,
   );

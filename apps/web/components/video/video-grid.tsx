@@ -11,7 +11,7 @@ export function VideoGrid({
 }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border px-6 py-14 text-center text-sm text-muted-foreground">
+      <div className="rounded-[1.75rem] border border-dashed border-border/70 bg-card/60 px-6 py-14 text-center text-sm text-muted-foreground shadow-[0_14px_40px_-35px_rgba(23,23,23,0.4)]">
         {emptyMessage ??
           "Aucune vidéo pour l’instant. Reviens plus tard."}
       </div>
@@ -19,7 +19,7 @@ export function VideoGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {items.map((video) => (
         <VideoCard key={video.id} video={video} />
       ))}

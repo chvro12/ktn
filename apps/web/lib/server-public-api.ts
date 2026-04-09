@@ -4,15 +4,12 @@ import type {
   FeedResponse,
   VideoDetailDto,
 } from "@/lib/types/public";
-
-const defaultRevalidate = 60;
-
 export async function fetchFeedServer(cursor?: string): Promise<FeedResponse> {
   try {
     const u = new URL(serverApiUrl("/v1/public/videos/feed"));
     u.searchParams.set("limit", "24");
     if (cursor) u.searchParams.set("cursor", cursor);
-    const res = await fetch(u.toString(), { next: { revalidate: defaultRevalidate } });
+    const res = await fetch(u.toString(), { cache: "no-store" });
     if (!res.ok) {
       return { items: [], nextCursor: null };
     }
@@ -28,7 +25,7 @@ export async function fetchVideoDetailServer(
   try {
     const res = await fetch(
       serverApiUrl(`/v1/public/videos/${encodeURIComponent(slugId)}`),
-      { next: { revalidate: 120 } },
+      { cache: "no-store" },
     );
     if (res.status === 404) return null;
     if (!res.ok) return null;
@@ -49,7 +46,7 @@ export async function fetchChannelVideosPage(
     );
     u.searchParams.set("limit", "24");
     if (cursor) u.searchParams.set("cursor", cursor);
-    const res = await fetch(u.toString(), { next: { revalidate: defaultRevalidate } });
+    const res = await fetch(u.toString(), { cache: "no-store" });
     if (res.status === 404) return null;
     if (!res.ok) return null;
     return res.json() as Promise<{ channel: ChannelPageDto; videos: FeedResponse }>;
@@ -62,9 +59,12 @@ export async function fetchPlaylistMetadataServer(
   id: string,
 ): Promise<{ title: string; description: string; privacy: string } | null> {
   try {
-    const res = await fetch(serverApiUrl(`/v1/playlists/${encodeURIComponent(id)}`), {
-      next: { revalidate: 120 },
-    });
+    const res = await fetch(
+      serverApiUrl(`/v1/playlists/${encodeURIComponent(id)}`),
+      {
+        cache: "no-store",
+      },
+    );
     if (!res.ok) return null;
     const body = (await res.json()) as {
       playlist: { title: string; description: string; privacy: string };
@@ -84,7 +84,7 @@ export async function fetchSearchVideosServer(
     const u = new URL(serverApiUrl("/v1/public/search/videos"));
     u.searchParams.set("q", trimmed);
     u.searchParams.set("limit", "24");
-    const res = await fetch(u.toString(), { next: { revalidate: 30 } });
+    const res = await fetch(u.toString(), { cache: "no-store" });
     if (!res.ok) return null;
     return res.json() as Promise<FeedResponse>;
   } catch {

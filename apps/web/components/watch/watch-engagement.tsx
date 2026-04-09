@@ -157,15 +157,16 @@ export function WatchEngagement({
   });
 
   return (
-    <div className="space-y-8 border-t border-border pt-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-8">
+      <div className="rounded-[1.75rem] border border-border/70 bg-card/75 p-4 shadow-[0_18px_55px_-45px_rgba(23,23,23,0.32)] sm:p-5">
+        <div className="flex flex-wrap items-center gap-3">
         <Button
           type="button"
           variant={liked ? "default" : "outline"}
           size="sm"
           disabled={!loggedIn || toggleLike.isPending}
           onClick={() => loggedIn && toggleLike.mutate()}
-          className="gap-1.5"
+          className="h-10 gap-1.5 rounded-full"
           aria-pressed={liked}
         >
           <ThumbsUp className="size-3.5" aria-hidden />
@@ -182,7 +183,7 @@ export function WatchEngagement({
               videoStateQuery.isPending || toggleWatchLater.isPending
             }
             onClick={() => toggleWatchLater.mutate()}
-            className="gap-1.5"
+            className="h-10 gap-1.5 rounded-full"
             aria-pressed={videoStateQuery.data?.inWatchLater ?? false}
           >
             <Bookmark className="size-3.5" aria-hidden />
@@ -191,7 +192,10 @@ export function WatchEngagement({
         ) : (
           <Link
             href={`/login?next=${encodeURIComponent(pathname)}`}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+            className={cn(
+              buttonVariants({ variant: "outline", size: "sm" }),
+              "h-10 gap-1.5 rounded-full",
+            )}
           >
             <Bookmark className="size-3.5" aria-hidden />
             Plus tard
@@ -209,6 +213,7 @@ export function WatchEngagement({
             pour liker, commenter, « Plus tard » et playlists.
           </p>
         ) : null}
+        </div>
       </div>
       {toggleWatchLater.isError ? (
         <p className="text-xs text-destructive" role="alert">
@@ -216,17 +221,25 @@ export function WatchEngagement({
         </p>
       ) : null}
 
-      <section aria-labelledby="comments-heading" className="space-y-4">
-        <h2 id="comments-heading" className="text-sm font-medium">
-          Commentaires
-          {commentsQuery.data?.totalTopLevel != null
-            ? ` (${commentsQuery.data.totalTopLevel})`
-            : null}
-        </h2>
+      <section
+        aria-labelledby="comments-heading"
+        className="space-y-4 rounded-[1.75rem] border border-border/70 bg-card/75 p-5 shadow-[0_18px_55px_-45px_rgba(23,23,23,0.32)]"
+      >
+        <div>
+          <h2 id="comments-heading" className="text-lg font-semibold tracking-tight">
+            Commentaires
+            {commentsQuery.data?.totalTopLevel != null
+              ? ` (${commentsQuery.data.totalTopLevel})`
+              : null}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Réactions, réponses et échanges autour de cette vidéo.
+          </p>
+        </div>
 
         {loggedIn ? (
           <form
-            className="space-y-2 rounded-lg border border-border bg-card/40 p-3"
+            className="space-y-3 rounded-[1.25rem] border border-border/70 bg-background/65 p-4"
             onSubmit={(e) => {
               e.preventDefault();
               const t = body.trim();
@@ -258,11 +271,16 @@ export function WatchEngagement({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               placeholder="Ajouter un commentaire…"
-              className="w-full resize-y rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+              className="w-full resize-y rounded-2xl border border-input/80 bg-background/80 px-3.5 py-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
               maxLength={8000}
             />
             <div className="flex justify-end gap-2">
-              <Button type="submit" size="sm" disabled={postComment.isPending}>
+              <Button
+                type="submit"
+                size="sm"
+                className="rounded-full"
+                disabled={postComment.isPending}
+              >
                 {postComment.isPending ? "Envoi…" : "Publier"}
               </Button>
             </div>
@@ -283,9 +301,9 @@ export function WatchEngagement({
         ) : (
           <ul className="space-y-6">
             {commentsQuery.data?.comments.map((c) => (
-              <li key={c.id} className="space-y-3">
+              <li key={c.id} className="space-y-3 rounded-[1.25rem] border border-border/60 bg-background/55 p-4">
                 <div className="flex gap-3">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                     {c.user.displayName.slice(0, 1).toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -314,7 +332,7 @@ export function WatchEngagement({
                 {c.replies.length > 0 ? (
                   <ul className="ml-11 space-y-3 border-l border-border pl-4">
                     {c.replies.map((r) => (
-                      <li key={r.id} className="flex gap-2">
+                      <li key={r.id} className="flex gap-2 rounded-2xl bg-muted/25 px-3 py-3">
                         <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-[0.65rem] font-medium text-muted-foreground">
                           {r.user.displayName.slice(0, 1).toUpperCase()}
                         </span>

@@ -12,7 +12,7 @@ export function ShareLinkButton() {
       type="button"
       variant="outline"
       size="sm"
-      className="gap-1.5"
+      className="h-10 w-full justify-center gap-1.5 rounded-full border-border/70 bg-background/75 shadow-[0_14px_35px_-30px_rgba(23,23,23,0.35)] sm:w-auto"
       onClick={async () => {
         const url = typeof window !== "undefined" ? window.location.href : "";
         try {

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
 import { copyFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { VideoProcessingStatus } from "@katante/db";
+import { VideoProcessingStatus, VideoVisibility } from "@katante/db";
 import { getMediaRoot, getPublicMediaBase } from "./media-root.js";
 import { prisma } from "./prisma.js";
 
@@ -73,6 +73,10 @@ export async function processVideoJob(videoId: string): Promise<void> {
         hlsUrl,
         playbackManifestKey: `hls/${name}`,
         durationSec: dur ?? video.durationSec ?? undefined,
+        publishedAt:
+          !video.publishedAt && video.visibility !== VideoVisibility.PRIVATE
+            ? new Date()
+            : video.publishedAt ?? undefined,
       },
     });
     return;
@@ -138,6 +142,10 @@ export async function processVideoJob(videoId: string): Promise<void> {
       playbackManifestKey: "hls/stream.m3u8",
       durationSec: dur ?? undefined,
       thumbnailUrl: thumbUrl,
+      publishedAt:
+        !video.publishedAt && video.visibility !== VideoVisibility.PRIVATE
+          ? new Date()
+          : video.publishedAt ?? undefined,
     },
   });
 }

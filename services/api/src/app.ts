@@ -14,6 +14,7 @@ import { registerPlaylistRoutes } from "./modules/playlists/playlist.routes.js";
 import { registerStudioRoutes } from "./modules/studio/studio.routes.js";
 import { registerSubscriptionRoutes } from "./modules/subscriptions/subscription.routes.js";
 import { registerVideoPublicRoutes } from "./modules/videos/video-public.routes.js";
+import { registerAdminRoutes } from "./modules/admin/admin.routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -43,6 +44,7 @@ export async function buildApp() {
   await registerSubscriptionRoutes(app);
   await registerLibraryRoutes(app);
   await registerPlaylistRoutes(app);
+  await registerAdminRoutes(app);
 
   await app.register(multipart, {
     limits: { fileSize: 512 * 1024 * 1024 },

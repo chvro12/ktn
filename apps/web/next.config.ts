@@ -35,11 +35,15 @@ if (process.env.VERCEL === "1") {
   }
 }
 
+type RemotePattern = NonNullable<
+  NonNullable<NextConfig["images"]>["remotePatterns"]
+>[number];
+
 /**
  * Construit les patterns autorisés pour next/image à partir des URLs d’API configurées.
  * Couvre : localhost:4000 (dev), PUBLIC_MEDIA_BASE_URL et NEXT_PUBLIC_API_URL (prod).
  */
-function buildMediaRemotePatterns(): import("next").RemotePattern[] {
+function buildMediaRemotePatterns(): RemotePattern[] {
   const candidates = [
     process.env.PUBLIC_MEDIA_BASE_URL?.trim(),
     process.env.NEXT_PUBLIC_API_URL?.trim(),
@@ -47,7 +51,7 @@ function buildMediaRemotePatterns(): import("next").RemotePattern[] {
   ].filter(Boolean) as string[];
 
   const seen = new Set<string>();
-  const patterns: import("next").RemotePattern[] = [];
+  const patterns: RemotePattern[] = [];
 
   for (const raw of candidates) {
     try {
@@ -58,7 +62,7 @@ function buildMediaRemotePatterns(): import("next").RemotePattern[] {
       patterns.push({
         protocol: u.protocol.replace(":", "") as "http" | "https",
         hostname: u.hostname,
-        port: u.port || undefined,
+        ...(u.port ? { port: u.port } : {}),
         pathname: "/v1/media/**",
       });
     } catch {

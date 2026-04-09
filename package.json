@@ -14,6 +14,8 @@
     "db:studio": "dotenv -e ./.env -- pnpm --filter @katante/db studio",
     "db:seed": "dotenv -e ./.env -- pnpm --filter @katante/db seed",
     "build": "pnpm --filter @katante/web build",
+    "build:api": "pnpm --filter @katante/api build",
+    "start": "pnpm --filter @katante/api start",
     "build:all": "pnpm run -r --if-present build",
     "lint": "pnpm run -r --if-present lint"
   },

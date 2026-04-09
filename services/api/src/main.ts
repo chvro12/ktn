@@ -8,7 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.resolve(__dirname, "../../..");
 config({ path: path.join(monorepoRoot, ".env") });
 
-const port = Number(process.env.API_PORT ?? 4000);
+/** Render / Railway injectent `PORT` ; en local on utilise souvent `API_PORT`. */
+const port = Number(process.env.PORT ?? process.env.API_PORT ?? 4000);
 const host = process.env.API_HOST ?? "0.0.0.0";
 
 const app = await buildApp();

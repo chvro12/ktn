@@ -17,7 +17,7 @@ function LibraryMenu() {
     <details className="group relative">
       <summary
         className={cn(
-          "flex cursor-pointer list-none items-center gap-1 rounded-full border border-transparent px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-border/70 hover:bg-background hover:text-foreground",
+          "flex cursor-pointer list-none items-center gap-1 rounded-full border border-transparent px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-border/70 hover:bg-card hover:text-foreground",
           "marker:content-none [&::-webkit-details-marker]:hidden",
         )}
       >
@@ -28,7 +28,7 @@ function LibraryMenu() {
         />
       </summary>
       <div
-        className="absolute right-0 top-full z-50 mt-2 min-w-[12rem] rounded-2xl border border-border/80 bg-popover/95 p-2 text-popover-foreground shadow-[0_25px_60px_-35px_rgba(23,23,23,0.4)] backdrop-blur"
+        className="absolute right-0 top-full z-50 mt-2 min-w-[12rem] rounded-2xl border border-border/80 bg-popover p-2 text-popover-foreground shadow-[0_25px_60px_-35px_rgba(0,0,0,0.6)]"
         role="menu"
       >
         <Link href="/watch-later" className={linkClass} role="menuitem">
@@ -90,21 +90,21 @@ export function HeaderNav() {
         <>
           <Link
             href="/onboarding/channel"
-            className="hidden rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground md:inline"
+            className="hidden rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-card hover:text-foreground md:inline"
           >
             Créer une chaîne
           </Link>
           {sessionUser.role === "ADMIN" ? (
             <Link
               href="/admin"
-              className="hidden rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground sm:inline-flex"
+              className="hidden rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-card hover:text-foreground sm:inline-flex"
             >
               Admin
             </Link>
           ) : null}
           <Link
             href="/studio"
-            className="inline-flex rounded-full border border-border/70 bg-background/80 px-3 py-2 text-xs text-foreground shadow-[0_14px_35px_-30px_rgba(23,23,23,0.4)] transition hover:bg-background sm:text-sm"
+            className="inline-flex rounded-full border border-border/80 bg-card/70 px-3 py-2 text-xs text-foreground transition hover:bg-card sm:text-sm"
           >
             Studio
           </Link>
@@ -113,6 +113,7 @@ export function HeaderNav() {
           </div>
           <span
             className="hidden max-w-[140px] truncate rounded-full border border-border/70 bg-background/65 px-3 py-2 text-sm text-muted-foreground lg:inline"
+            
             title={sessionUser.displayName}
           >
             {sessionUser.displayName}
@@ -154,7 +155,7 @@ export function HeaderNav() {
             href="/register"
             className={cn(
               buttonVariants({ variant: "default", size: "sm" }),
-              "rounded-full px-3 text-xs shadow-[0_16px_40px_-30px_rgba(0,0,0,0.45)] sm:text-sm",
+              "rounded-full px-3 text-xs sm:text-sm",
             )}
           >
             Inscription

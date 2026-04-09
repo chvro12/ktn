@@ -8,7 +8,6 @@ import {
 import {
   CircleCheckBig,
   Clock3,
-  FileVideo,
   LoaderCircle,
   RefreshCw,
   TriangleAlert,
@@ -58,10 +57,7 @@ async function fetchStudioList(): Promise<{
   }>;
 }
 
-const STATUS_META: Record<
-  string,
-  { label: string; tone: string; hint: string }
-> = {
+const STATUS_META: Record<string, { label: string; tone: string; hint: string }> = {
   DRAFT: {
     label: "Brouillon",
     tone: "border-border/70 bg-background/70 text-muted-foreground",
@@ -74,17 +70,17 @@ const STATUS_META: Record<
   },
   UPLOADED: {
     label: "En attente",
-    tone: "border-amber-200 bg-amber-50 text-amber-700",
+    tone: "border-border/80 bg-muted/30 text-foreground",
     hint: "Le worker prendra la vidéo en charge bientôt.",
   },
   PROCESSING: {
     label: "Traitement",
-    tone: "border-sky-200 bg-sky-50 text-sky-700",
+    tone: "border-border/80 bg-muted/30 text-foreground",
     hint: "Encodage, miniature et préparation du player.",
   },
   READY: {
     label: "Prête",
-    tone: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    tone: "border-border/80 bg-muted/30 text-foreground",
     hint: "Lecture disponible, publication selon visibilité.",
   },
   FAILED: {
@@ -217,19 +213,12 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
       <div className="space-y-6 sm:space-y-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              <FileVideo className="size-3.5" aria-hidden />
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Studio
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Gère tes vidéos sans friction
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Upload, traitement, publication et suivi des statuts depuis un
-                seul espace.
-              </p>
-            </div>
+            </h1>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              Upload, traitement, publication et suivi des statuts depuis un seul espace.
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -251,7 +240,7 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
         </div>
 
         {uploadedVideo ? (
-          <div className="flex items-start gap-3 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-800">
+          <div className="flex items-start gap-3 rounded-[1.5rem] border border-emerald-500/25 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-200">
             <CircleCheckBig className="mt-0.5 size-4 shrink-0" aria-hidden />
             <div>
               <p className="font-medium">Vidéo envoyée</p>
@@ -272,7 +261,7 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
             className={cn(
               "rounded-[1.5rem] px-4 py-4 text-sm",
               feedback.tone === "success"
-                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
                 : "border border-destructive/20 bg-destructive/5 text-destructive",
             )}
           >
@@ -310,7 +299,7 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
             </div>
           </div>
         ) : noChannel ? (
-          <div className="rounded-[1.75rem] border border-border/70 bg-card/75 p-6 shadow-[0_20px_55px_-45px_rgba(23,23,23,0.3)]">
+          <div className="rounded-[1.75rem] border border-border/80 bg-card p-6">
             <p className="text-lg font-semibold tracking-tight">Chaîne requise</p>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
               Crée une chaîne pour commencer à publier et suivre tes vidéos depuis
@@ -329,10 +318,8 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
         ) : (
           <>
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4 shadow-[0_16px_45px_-40px_rgba(23,23,23,0.35)]">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  Total
-                </p>
+              <div className="rounded-[1.5rem] border border-border/80 bg-card p-4">
+                <p className="text-xs text-muted-foreground">Total</p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight">
                   {stats.total}
                 </p>
@@ -340,10 +327,8 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
                   vidéo{stats.total > 1 ? "s" : ""} dans ton studio
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4 shadow-[0_16px_45px_-40px_rgba(23,23,23,0.35)]">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  En cours
-                </p>
+              <div className="rounded-[1.5rem] border border-border/80 bg-card p-4">
+                <p className="text-xs text-muted-foreground">En cours</p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight">
                   {stats.processing}
                 </p>
@@ -351,10 +336,8 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
                   import{stats.processing > 1 ? "s" : ""} ou traitement{stats.processing > 1 ? "s" : ""}
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4 shadow-[0_16px_45px_-40px_rgba(23,23,23,0.35)]">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  En ligne
-                </p>
+              <div className="rounded-[1.5rem] border border-border/80 bg-card p-4">
+                <p className="text-xs text-muted-foreground">En ligne</p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight">
                   {stats.published}
                 </p>
@@ -365,7 +348,7 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
             </div>
 
             {listQuery.data?.videos.length === 0 ? (
-              <div className="rounded-[1.75rem] border border-dashed border-border/80 bg-card/55 px-6 py-12 text-center shadow-[0_16px_45px_-40px_rgba(23,23,23,0.28)]">
+              <div className="rounded-[1.75rem] border border-dashed border-border/80 bg-card px-6 py-12 text-center">
                 <p className="text-lg font-semibold tracking-tight">
                   Aucune vidéo pour l’instant
                 </p>
@@ -393,7 +376,7 @@ export function StudioDashboard({ newVideoId }: { newVideoId?: string }) {
 
                   return (
                     <li key={video.id}>
-                      <div className="rounded-[1.5rem] border border-border/70 bg-card/75 p-4 shadow-[0_16px_45px_-40px_rgba(23,23,23,0.28)] sm:p-5">
+                      <div className="rounded-[1.5rem] border border-border/80 bg-card p-4 sm:p-5">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0 space-y-3">
                             <div className="flex flex-wrap items-center gap-2">

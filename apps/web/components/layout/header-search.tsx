@@ -33,7 +33,7 @@ export function HeaderSearch() {
         placeholder="Rechercher…"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        className="h-10 w-full rounded-full border-border/70 bg-background/80 pl-10 pr-4 shadow-[0_16px_40px_-34px_rgba(23,23,23,0.4)] sm:h-11 sm:placeholder:text-sm"
+        className="h-10 w-full rounded-full border-border/80 bg-card/70 pl-10 pr-4 sm:h-11 sm:placeholder:text-sm"
         autoComplete="off"
         aria-label="Recherche"
       />

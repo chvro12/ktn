@@ -1,7 +1,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -73,11 +72,8 @@ export function RegisterForm() {
   const isCreator = form.watch("isCreator");
 
   return (
-    <Card className="w-full max-w-lg rounded-[2rem] border border-border/70 bg-card/90 py-0 shadow-[0_28px_80px_-48px_rgba(23,23,23,0.45)]">
+    <Card className="w-full max-w-lg rounded-[1.75rem] border border-border/80 bg-card py-0 shadow-none">
       <CardHeader className="px-6 pt-6 sm:px-7 sm:pt-7">
-        <div className="mb-2 inline-flex size-11 items-center justify-center rounded-2xl bg-foreground text-primary-foreground shadow-[0_18px_40px_-28px_rgba(0,0,0,0.6)]">
-          <Sparkles className="size-5" aria-hidden />
-        </div>
         <CardTitle className="text-2xl font-semibold tracking-tight">
           Créer un compte
         </CardTitle>
@@ -189,7 +185,7 @@ export function RegisterForm() {
             </p>
           ) : null}
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 rounded-b-[2rem] border-t border-border/70 bg-muted/35 px-6 py-5 sm:flex-row sm:justify-between sm:px-7">
+        <CardFooter className="flex flex-col gap-3 rounded-b-[1.75rem] border-t border-border/80 bg-muted/20 px-6 py-5 sm:flex-row sm:justify-between sm:px-7">
           <Button
             type="submit"
             className="h-11 w-full rounded-xl sm:w-auto"

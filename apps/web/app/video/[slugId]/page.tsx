@@ -104,17 +104,15 @@ export default async function WatchPage({ params }: Props) {
                 <h1 className="text-2xl font-semibold leading-snug tracking-tight text-balance">
                   {video.title}
                 </h1>
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
-                    {formatViewCount(video.viewsCount)}
-                  </span>
-                  <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
-                    {formatPublishedShort(video.publishedAt)}
-                  </span>
+                <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                  <span>{formatViewCount(video.viewsCount)}</span>
+                  <span aria-hidden>·</span>
+                  <span>{formatPublishedShort(video.publishedAt)}</span>
                   {video.durationSec != null ? (
-                    <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 tabular-nums">
-                      {formatDurationSec(video.durationSec)}
-                    </span>
+                    <>
+                      <span aria-hidden>·</span>
+                      <span className="tabular-nums">{formatDurationSec(video.durationSec)}</span>
+                    </>
                   ) : null}
                 </div>
               </div>
@@ -166,12 +164,8 @@ export default async function WatchPage({ params }: Props) {
           />
           <section className="space-y-4 lg:hidden">
             <div>
-              <h2 className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                Autres vidéos
-              </h2>
-              <p className="mt-1 text-lg font-semibold tracking-tight">
-                {video.channel.name}
-              </p>
+              <h2 className="text-lg font-semibold tracking-tight">Autres vidéos</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{video.channel.name}</p>
             </div>
             {relatedVideos.length > 0 ? (
               <VideoGrid
@@ -186,13 +180,11 @@ export default async function WatchPage({ params }: Props) {
           </section>
         </div>
         <aside className="hidden min-h-[200px] min-w-0 lg:block">
-          <div className="rounded-[1.75rem] border border-border/70 bg-card/70 p-5 shadow-[0_20px_60px_-45px_rgba(23,23,23,0.32)]">
-            <h2 className="text-sm font-medium uppercase tracking-[0.16em] text-muted-foreground">
+          <div className="rounded-[1.75rem] border border-border/80 bg-card p-5">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
               Autres vidéos
             </h2>
-            <p className="mt-2 text-lg font-semibold tracking-tight text-foreground">
-              {video.channel.name}
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{video.channel.name}</p>
             <div className="mt-4">
               {relatedVideos.length > 0 ? (
                 <VideoGrid

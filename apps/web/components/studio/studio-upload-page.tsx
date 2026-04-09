@@ -5,7 +5,6 @@ import {
   CircleCheckBig,
   FileVideo,
   LoaderCircle,
-  Sparkles,
   TriangleAlert,
   Upload,
 } from "lucide-react";
@@ -248,20 +247,12 @@ export function StudioUploadPage() {
       <div className="mx-auto max-w-5xl space-y-6 sm:space-y-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              <Sparkles className="size-3.5" aria-hidden />
-              Studio upload
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Importer une vidéo
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Dépose ton fichier, vérifie le titre, puis laisse le studio faire le
-                reste. Les vidéos publiques apparaîtront automatiquement après
-                traitement.
-              </p>
-            </div>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Importer une vidéo
+            </h1>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              Dépose ton fichier, vérifie le titre, puis laisse le studio faire le reste.
+            </p>
           </div>
           <Link
             href="/studio"
@@ -279,7 +270,7 @@ export function StudioUploadPage() {
             uploadMutation.mutate();
           }}
         >
-          <section className="rounded-[1.75rem] border border-border/70 bg-card/80 p-4 shadow-[0_24px_65px_-45px_rgba(23,23,23,0.45)] sm:rounded-[2rem] sm:p-6">
+          <section className="rounded-[1.75rem] border border-border/80 bg-card p-4 sm:rounded-[2rem] sm:p-6">
             <div className="space-y-5">
               <div className="space-y-1.5">
                 <Label htmlFor="uv-title">Titre</Label>
@@ -333,18 +324,14 @@ export function StudioUploadPage() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-border/70 bg-background/65 p-4">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                    Formats
-                  </p>
+                <div className="rounded-2xl border border-border/80 bg-background/40 p-4">
+                  <p className="text-xs text-muted-foreground">Formats</p>
                   <p className="mt-2 text-sm text-foreground">
                     MP4, MOV, WEBM ou AVI jusqu’à 512 Mo.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-border/70 bg-background/65 p-4">
-                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                    Publication
-                  </p>
+                <div className="rounded-2xl border border-border/80 bg-background/40 p-4">
+                  <p className="text-xs text-muted-foreground">Publication</p>
                   <p className="mt-2 text-sm text-foreground">
                     Les vidéos publiques et non répertoriées se publient dès que
                     le traitement est prêt.
@@ -354,7 +341,7 @@ export function StudioUploadPage() {
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,247,244,0.92))] p-4 shadow-[0_24px_65px_-45px_rgba(23,23,23,0.45)] sm:rounded-[2rem] sm:p-6">
+          <section className="rounded-[1.75rem] border border-border/80 bg-card p-4 sm:rounded-[2rem] sm:p-6">
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -399,12 +386,11 @@ export function StudioUploadPage() {
                 className={[
                   "group relative flex min-h-56 w-full flex-col items-center justify-center rounded-[1.5rem] border border-dashed px-4 py-6 text-center transition sm:min-h-72 sm:rounded-[1.75rem] sm:px-5 sm:py-8",
                   isDraggingFile
-                    ? "border-foreground/40 bg-background shadow-[0_20px_60px_-45px_rgba(23,23,23,0.5)]"
-                    : "border-border/80 bg-background/75 hover:border-foreground/25 hover:bg-background disabled:cursor-not-allowed disabled:opacity-70",
+                    ? "border-foreground/40 bg-background"
+                    : "border-border/80 bg-background/40 hover:border-foreground/25 hover:bg-background/60 disabled:cursor-not-allowed disabled:opacity-70",
                 ].join(" ")}
               >
-                <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-foreground/15 to-transparent" />
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-foreground text-primary-foreground shadow-[0_18px_35px_-25px_rgba(0,0,0,0.7)] transition group-hover:scale-[1.03]">
+                <div className="flex size-14 items-center justify-center rounded-2xl bg-muted text-foreground transition group-hover:scale-[1.03]">
                   {file ? <FileVideo className="size-6" /> : <Upload className="size-6" />}
                 </div>
                 <div className="mt-4 space-y-2">
@@ -470,9 +456,9 @@ export function StudioUploadPage() {
               ) : null}
 
               {!uploadMutation.isPending ? (
-                <div className="rounded-2xl border border-border/70 bg-background/70 p-4 text-sm">
+                <div className="rounded-2xl border border-border/80 bg-background/40 p-4 text-sm">
                   <div className="flex items-start gap-3">
-                    <CircleCheckBig className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden />
+                    <CircleCheckBig className="mt-0.5 size-4 shrink-0 text-foreground" aria-hidden />
                     <div className="text-muted-foreground">
                       Vérifie surtout le titre et la visibilité. Une fois le
                       fichier envoyé, le studio suivra automatiquement l’encodage.

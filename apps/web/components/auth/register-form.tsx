@@ -17,7 +17,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { readApiErrorMessage } from "@/lib/api-errors";
+import {
+  formatClientFetchErrorMessage,
+  readApiErrorMessage,
+} from "@/lib/api-errors";
 import { apiFetch } from "@/lib/api";
 import { registerFormSchema, type RegisterFormValues } from "@/lib/schemas/auth";
 
@@ -83,7 +86,7 @@ export function RegisterForm() {
           try {
             await mutation.mutateAsync(values);
           } catch (e) {
-            setServerError(e instanceof Error ? e.message : "Erreur inconnue");
+            setServerError(formatClientFetchErrorMessage(e));
           }
         })}
       >

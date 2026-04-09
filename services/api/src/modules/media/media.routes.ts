@@ -44,8 +44,9 @@ export async function registerMediaRoutes(app: FastifyInstance) {
         return;
       }
 
+      let st: Awaited<ReturnType<typeof stat>>;
       try {
-        const st = await stat(full);
+        st = await stat(full);
         if (!st.isFile()) {
           void reply.status(404).send();
           return;
@@ -57,11 +58,46 @@ export async function registerMediaRoutes(app: FastifyInstance) {
 
       const ext = extname(full).toLowerCase();
       const mime = MIME[ext] ?? "application/octet-stream";
+      const fileSize = st.size;
+      const cacheControl = isAdmin ? "private, no-store" : "public, max-age=3600";
+
+      void reply.header("Accept-Ranges", "bytes");
+      void reply.header("Cache-Control", cacheControl);
+
+      const rangeHeader = request.headers.range;
+
+      if (rangeHeader) {
+        // Supporte "Range: bytes=start-end" pour la lecture vidéo dans le navigateur
+        const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
+        if (!match) {
+          void reply
+            .status(416)
+            .header("Content-Range", `bytes */${fileSize}`)
+            .send();
+          return;
+        }
+        const start = match[1] ? parseInt(match[1], 10) : 0;
+        const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+
+        if (start > end || end >= fileSize) {
+          void reply
+            .status(416)
+            .header("Content-Range", `bytes */${fileSize}`)
+            .send();
+          return;
+        }
+
+        const chunkSize = end - start + 1;
+        void reply.status(206);
+        void reply.header("Content-Range", `bytes ${start}-${end}/${fileSize}`);
+        void reply.header("Content-Length", String(chunkSize));
+        void reply.header("Content-Type", mime);
+        return reply.send(createReadStream(full, { start, end }));
+      }
+
+      // Réponse complète (200) — le navigateur peut aussi demander le fichier entier
+      void reply.header("Content-Length", String(fileSize));
       void reply.header("Content-Type", mime);
-      void reply.header(
-        "Cache-Control",
-        isAdmin ? "private, no-store" : "public, max-age=3600",
-      );
       return reply.send(createReadStream(full));
     },
   );

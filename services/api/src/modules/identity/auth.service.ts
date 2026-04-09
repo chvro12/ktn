@@ -14,12 +14,14 @@ const SESSION_DAYS = 14;
 
 const BCRYPT_ROUNDS = 12;
 
+// En prod, front et API sur des origines distinctes : Lax n’envoie pas le cookie sur fetch cross-site.
 function sessionCookieOptions(maxAgeSec: number) {
+  const isProd = process.env.NODE_ENV === "production";
   return {
     path: "/",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
+    secure: isProd,
+    sameSite: (isProd ? "none" : "lax") as "lax" | "none",
     maxAge: maxAgeSec,
   };
 }
@@ -111,11 +113,12 @@ export async function clearSession(reply: FastifyReply, rawCookie?: string) {
     const tokenHash = hashSessionToken(rawCookie);
     await prisma.session.deleteMany({ where: { token: tokenHash } });
   }
+  const isProd = process.env.NODE_ENV === "production";
   reply.clearCookie(SESSION_COOKIE, {
     path: "/",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
   });
 }
 

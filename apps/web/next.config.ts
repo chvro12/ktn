@@ -8,23 +8,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const monorepoRoot = path.join(__dirname, "../..");
 loadEnvConfig(monorepoRoot);
 
-/** Sur Vercel, `NEXT_PUBLIC_*` est figé au build : sans URL d’API, le client retombe sur localhost → « Failed to fetch ». */
+/**
+ * Sur Vercel : au moins une URL d’API. `API_URL` (sans NEXT_PUBLIC) est lue au runtime par
+ * `/api/public-config` ; `NEXT_PUBLIC_API_URL` reste utile pour le SSR et en fallback client.
+ */
 if (process.env.VERCEL === "1") {
-  const api = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const api =
+    process.env.API_URL?.trim() || process.env.NEXT_PUBLIC_API_URL?.trim();
   if (!api) {
     throw new Error(
-      "NEXT_PUBLIC_API_URL manquant pour le build Vercel. Dashboard → Environment Variables : mets l’URL https de ton API (ex. Railway), puis redéploie.",
+      "Définis API_URL et/ou NEXT_PUBLIC_API_URL sur Vercel (https://ton-api.up.railway.app). API_URL permet de changer l’URL sans rebuild des previews.",
     );
   }
   try {
     const u = new URL(api);
     if (u.protocol !== "https:") {
-      throw new Error("NEXT_PUBLIC_API_URL doit être en https en production.");
+      throw new Error("L’URL de l’API doit être en https en production.");
     }
   } catch (e) {
     if (e instanceof TypeError) {
       throw new Error(
-        "NEXT_PUBLIC_API_URL n’est pas une URL valide (ex. https://ton-api.up.railway.app).",
+        "API_URL / NEXT_PUBLIC_API_URL invalide (ex. https://ton-api.up.railway.app).",
       );
     }
     throw e;

@@ -1,4 +1,4 @@
-import { apiUrl } from "@/lib/api";
+import { serverApiUrl } from "@/lib/api";
 import type {
   ChannelPageDto,
   FeedResponse,
@@ -9,7 +9,7 @@ const defaultRevalidate = 60;
 
 export async function fetchFeedServer(cursor?: string): Promise<FeedResponse> {
   try {
-    const u = new URL(apiUrl("/v1/public/videos/feed"));
+    const u = new URL(serverApiUrl("/v1/public/videos/feed"));
     u.searchParams.set("limit", "24");
     if (cursor) u.searchParams.set("cursor", cursor);
     const res = await fetch(u.toString(), { next: { revalidate: defaultRevalidate } });
@@ -27,7 +27,7 @@ export async function fetchVideoDetailServer(
 ): Promise<VideoDetailDto | null> {
   try {
     const res = await fetch(
-      apiUrl(`/v1/public/videos/${encodeURIComponent(slugId)}`),
+      serverApiUrl(`/v1/public/videos/${encodeURIComponent(slugId)}`),
       { next: { revalidate: 120 } },
     );
     if (res.status === 404) return null;
@@ -45,7 +45,7 @@ export async function fetchChannelVideosPage(
 ): Promise<{ channel: ChannelPageDto; videos: FeedResponse } | null> {
   try {
     const u = new URL(
-      apiUrl(`/v1/public/channels/${encodeURIComponent(handle)}/videos`),
+      serverApiUrl(`/v1/public/channels/${encodeURIComponent(handle)}/videos`),
     );
     u.searchParams.set("limit", "24");
     if (cursor) u.searchParams.set("cursor", cursor);
@@ -62,7 +62,7 @@ export async function fetchPlaylistMetadataServer(
   id: string,
 ): Promise<{ title: string; description: string; privacy: string } | null> {
   try {
-    const res = await fetch(apiUrl(`/v1/playlists/${encodeURIComponent(id)}`), {
+    const res = await fetch(serverApiUrl(`/v1/playlists/${encodeURIComponent(id)}`), {
       next: { revalidate: 120 },
     });
     if (!res.ok) return null;
@@ -81,7 +81,7 @@ export async function fetchSearchVideosServer(
   const trimmed = q.trim();
   if (trimmed.length < 2) return null;
   try {
-    const u = new URL(apiUrl("/v1/public/search/videos"));
+    const u = new URL(serverApiUrl("/v1/public/search/videos"));
     u.searchParams.set("q", trimmed);
     u.searchParams.set("limit", "24");
     const res = await fetch(u.toString(), { next: { revalidate: 30 } });

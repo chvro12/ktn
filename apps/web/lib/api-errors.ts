@@ -11,9 +11,8 @@ export type ApiErrorBody = {
 export function formatClientFetchErrorMessage(error: unknown): string {
   if (error instanceof TypeError && error.message === "Failed to fetch") {
     return (
-      "Connexion à l’API impossible. Sur Vercel : variable NEXT_PUBLIC_API_URL = URL HTTPS " +
-      "de ton API Railway (ex. https://…-production.up.railway.app), sans / à la fin. " +
-      "Enregistre puis redéploie le site pour appliquer la variable."
+      "Connexion à l’API impossible. Sur Vercel : mets API_URL (recommandé, runtime) ou " +
+      "NEXT_PUBLIC_API_URL = ton URL HTTPS Railway, sans / à la fin. Redéploie après changement."
     );
   }
   if (error instanceof Error) return error.message;

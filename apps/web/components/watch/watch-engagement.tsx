@@ -8,7 +8,7 @@ import { Bookmark, ThumbsUp } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
-import { apiFetch, apiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import type { VideoLibraryStateDto } from "@/lib/library-api";
 import { fetchVideoLibraryState } from "@/lib/library-api";
 import { AddToPlaylist } from "@/components/playlists/add-to-playlist";
@@ -25,8 +25,8 @@ async function fetchMe(): Promise<MeResponse> {
 }
 
 async function fetchComments(slugId: string): Promise<CommentsListResponse> {
-  const res = await fetch(
-    apiUrl(`/v1/public/videos/${encodeURIComponent(slugId)}/comments`),
+  const res = await apiFetch(
+    `/v1/public/videos/${encodeURIComponent(slugId)}/comments`,
   );
   if (!res.ok) throw new Error("comments");
   return res.json() as Promise<CommentsListResponse>;

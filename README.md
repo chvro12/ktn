@@ -44,7 +44,7 @@ Dans le tableau de bord Vercel → *Project Settings* → *Build & Development* 
 - **Output Directory** : laisse le champ **vide** / désactive l’override (ne mets pas `public`).
 - **Framework Preset** : Next.js (souvent déduit après correction ci‑dessus).
 
-Variables d’environnement côté production : au minimum `NEXT_PUBLIC_API_URL` et `NEXT_PUBLIC_SITE_URL` (URL réelles, pas `localhost`).
+Variables d’environnement côté production : `NEXT_PUBLIC_SITE_URL` ; pour l’API, **`API_URL`** (https, lue au runtime — idéal pour les previews sans rebuild) et/ou **`NEXT_PUBLIC_API_URL`** (même valeur).
 
 ## Documentation technique
 

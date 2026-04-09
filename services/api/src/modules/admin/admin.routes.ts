@@ -9,6 +9,7 @@ import {
   adminVideoModerationPatchSchema,
 } from "./admin.schemas.js";
 import {
+  getAdminVideoDetail,
   listAdminReports,
   listAdminVideosModeration,
   listModerationActions,
@@ -112,6 +113,19 @@ export async function registerAdminRoutes(app: FastifyInstance) {
       try {
         const q = adminUsersQuerySchema.parse(request.query);
         const result = await listAdminVideosModeration(q.cursor, q.limit);
+        void reply.send(result);
+      } catch (err) {
+        handleRouteError(reply, err);
+      }
+    },
+  );
+
+  app.get<VideoIdParams>(
+    "/v1/admin/videos/:videoId",
+    { preHandler: requireAdmin },
+    async (request, reply) => {
+      try {
+        const result = await getAdminVideoDetail(request.params.videoId);
         void reply.send(result);
       } catch (err) {
         handleRouteError(reply, err);

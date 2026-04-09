@@ -31,6 +31,27 @@ function targetTypeLabel(t: string) {
   }
 }
 
+function actionLabel(actionType: string) {
+  switch (actionType) {
+    case "VIDEO_MODERATION_NONE":
+      return "Vidéo approuvée";
+    case "VIDEO_MODERATION_LIMITED":
+      return "Vidéo limitée";
+    case "VIDEO_MODERATION_BLOCKED":
+      return "Vidéo bloquée";
+    case "REPORT_OPEN":
+      return "Signalement rouvert";
+    case "REPORT_IN_REVIEW":
+      return "Signalement en examen";
+    case "REPORT_RESOLVED":
+      return "Signalement résolu";
+    case "REPORT_REJECTED":
+      return "Signalement rejeté";
+    default:
+      return actionType;
+  }
+}
+
 export function AdminAuditTable() {
   const q = useInfiniteQuery({
     queryKey: ["admin", "moderation-actions"],
@@ -93,13 +114,18 @@ export function AdminAuditTable() {
                     {a.admin.email}
                   </div>
                 </td>
-                <td className="px-3 py-3 font-mono text-xs">{a.actionType}</td>
+                <td className="px-3 py-3">
+                  <div className="text-sm font-medium">{actionLabel(a.actionType)}</div>
+                  <div className="font-mono text-[0.65rem] text-muted-foreground">
+                    {a.actionType}
+                  </div>
+                </td>
                 <td className="px-3 py-3">
                   <span className="text-muted-foreground">
                     {targetTypeLabel(a.targetType)}
                   </span>
                   <div className="mt-0.5 font-mono text-[0.65rem] text-muted-foreground">
-                    {a.targetId}
+                    {a.targetId.slice(0, 12)}…
                   </div>
                 </td>
                 <td className="max-w-xs px-3 py-3 text-xs text-muted-foreground">

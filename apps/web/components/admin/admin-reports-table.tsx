@@ -102,7 +102,7 @@ function ReportRow({ report }: { report: AdminReportRow }) {
             href={report.targetPath}
             className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline"
           >
-            Voir sur le site
+            Ouvrir
           </Link>
         ) : null}
         <p className="mt-2 text-sm text-foreground">

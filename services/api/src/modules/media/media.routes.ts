@@ -1,8 +1,10 @@
+import { UserRole } from "@katante/db";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { extname, normalize, resolve, sep } from "node:path";
 import type { FastifyInstance } from "fastify";
 import { resolveMediaPath } from "../../lib/media-config.js";
+import { optionalAuth } from "../../lib/optional-auth.js";
 import { canReadMediaAsset } from "../studio/studio.service.js";
 
 const MIME: Record<string, string> = {
@@ -19,6 +21,7 @@ const MIME: Record<string, string> = {
 export async function registerMediaRoutes(app: FastifyInstance) {
   app.get<{ Params: { videoId: string; "*": string } }>(
     "/v1/media/:videoId/*",
+    { preHandler: optionalAuth },
     async (request, reply) => {
       const { videoId } = request.params;
       const rest = (request.params["*"] ?? "").replace(/^\/+/, "");
@@ -27,7 +30,8 @@ export async function registerMediaRoutes(app: FastifyInstance) {
         return;
       }
 
-      const allowed = await canReadMediaAsset(videoId, rest);
+      const isAdmin = request.currentUser?.role === UserRole.ADMIN;
+      const allowed = await canReadMediaAsset(videoId, rest, isAdmin);
       if (!allowed) {
         void reply.status(404).send();
         return;
@@ -54,7 +58,10 @@ export async function registerMediaRoutes(app: FastifyInstance) {
       const ext = extname(full).toLowerCase();
       const mime = MIME[ext] ?? "application/octet-stream";
       void reply.header("Content-Type", mime);
-      void reply.header("Cache-Control", "public, max-age=3600");
+      void reply.header(
+        "Cache-Control",
+        isAdmin ? "private, no-store" : "public, max-age=3600",
+      );
       return reply.send(createReadStream(full));
     },
   );

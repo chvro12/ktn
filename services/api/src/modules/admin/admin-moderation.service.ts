@@ -3,6 +3,8 @@ import {
   ReportStatus,
   ReportTargetType,
   VideoModerationState,
+  VideoProcessingStatus,
+  VideoVisibility,
 } from "@katante/db";
 import { AppError } from "../../common/errors.js";
 import { prisma } from "../../lib/prisma.js";
@@ -90,7 +92,7 @@ async function enrichReportsForList(
       const v = videoMap.get(r.targetId);
       if (v) {
         targetLabel = v.title;
-        targetPath = `/video/${v.slug}-${v.id}`;
+        targetPath = `/admin/videos/${v.id}`;
       }
     } else if (r.targetType === ReportTargetType.CHANNEL) {
       const c = channelMap.get(r.targetId);
@@ -110,7 +112,7 @@ async function enrichReportsForList(
         const excerpt =
           c.body.length > 80 ? `${c.body.slice(0, 80)}…` : c.body;
         targetLabel = `Commentaire : ${excerpt}`;
-        targetPath = `/video/${c.video.slug}-${c.video.id}`;
+        targetPath = `/admin/videos/${c.video.id}`;
       }
     }
 
@@ -243,7 +245,7 @@ export async function listAdminVideosModeration(
   return {
     items: slice.map((v) => ({
       ...v,
-      watchPath: `/video/${v.slug}-${v.id}`,
+      watchPath: `/admin/videos/${v.id}`,
     })),
     nextCursor,
   };
@@ -297,7 +299,79 @@ export async function patchAdminVideoModeration(
   if (!updated) throw new AppError(500, "INTERNAL_ERROR", "Mise à jour invalide");
   return {
     ...updated,
-    watchPath: `/video/${updated.slug}-${updated.id}`,
+    watchPath: `/admin/videos/${updated.id}`,
+  };
+}
+
+export async function getAdminVideoDetail(videoId: string) {
+  const video = await prisma.video.findUnique({
+    where: { id: videoId },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      description: true,
+      thumbnailUrl: true,
+      hlsUrl: true,
+      durationSec: true,
+      viewsCount: true,
+      likesCount: true,
+      moderationState: true,
+      processingStatus: true,
+      visibility: true,
+      publishedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      channel: {
+        select: {
+          id: true,
+          handle: true,
+          name: true,
+          avatarUrl: true,
+          verified: true,
+        },
+      },
+    },
+  });
+
+  if (!video) {
+    throw new AppError(404, "NOT_FOUND", "Vidéo introuvable");
+  }
+
+  const [openReportsCount, totalReportsCount] = await Promise.all([
+    prisma.report.count({
+      where: {
+        targetType: ReportTargetType.VIDEO,
+        targetId: videoId,
+        status: ReportStatus.OPEN,
+      },
+    }),
+    prisma.report.count({
+      where: {
+        targetType: ReportTargetType.VIDEO,
+        targetId: videoId,
+      },
+    }),
+  ]);
+
+  const isPubliclyVisible =
+    video.processingStatus === VideoProcessingStatus.READY &&
+    video.visibility === VideoVisibility.PUBLIC &&
+    video.moderationState !== VideoModerationState.BLOCKED &&
+    video.publishedAt != null;
+
+  return {
+    video: {
+      ...video,
+      watchPath: `/admin/videos/${video.id}`,
+      publicWatchPath: `/video/${video.slug}-${video.id}`,
+      isPubliclyVisible,
+      openReportsCount,
+      totalReportsCount,
+      publishedAt: video.publishedAt?.toISOString() ?? null,
+      createdAt: video.createdAt.toISOString(),
+      updatedAt: video.updatedAt.toISOString(),
+    },
   };
 }
 

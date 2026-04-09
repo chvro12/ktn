@@ -20,7 +20,7 @@ const MOD_STATES = ["NONE", "LIMITED", "BLOCKED"] as const;
 function modLabel(s: string) {
   switch (s) {
     case "NONE":
-      return "Aucune";
+      return "Normale";
     case "LIMITED":
       return "Limitée";
     case "BLOCKED":
@@ -41,6 +41,15 @@ function formatDate(iso: string | null) {
   }
 }
 
+function isPubliclyVisible(video: AdminVideoModRow) {
+  return (
+    video.processingStatus === "READY" &&
+    video.visibility === "PUBLIC" &&
+    video.moderationState !== "BLOCKED" &&
+    video.publishedAt != null
+  );
+}
+
 function VideoModRow({ video }: { video: AdminVideoModRow }) {
   const queryClient = useQueryClient();
   const [moderationState, setModerationState] = useState(video.moderationState);
@@ -54,9 +63,9 @@ function VideoModRow({ video }: { video: AdminVideoModRow }) {
     moderationState !== video.moderationState || notes.trim().length > 0;
 
   const mutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (nextState: string) =>
       patchAdminVideoModeration(video.id, {
-        moderationState,
+        moderationState: nextState,
         ...(notes.trim() ? { notes: notes.trim() } : {}),
       }),
     onSuccess: () => {
@@ -71,6 +80,11 @@ function VideoModRow({ video }: { video: AdminVideoModRow }) {
     },
   });
 
+  const submitState = (nextState: string) => {
+    setModerationState(nextState);
+    mutation.mutate(nextState);
+  };
+
   return (
     <tr className="border-b border-border/60 align-top last:border-0">
       <td className="px-3 py-3">
@@ -78,12 +92,22 @@ function VideoModRow({ video }: { video: AdminVideoModRow }) {
         <div className="text-xs text-muted-foreground">
           @{video.channel.handle} · {video.channel.name}
         </div>
-        <Link
-          href={video.watchPath}
-          className="mt-1 inline-block text-xs text-primary underline-offset-4 hover:underline"
-        >
-          Voir la vidéo
-        </Link>
+        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+          <Link
+            href={video.watchPath}
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            Ouvrir en admin
+          </Link>
+          {isPubliclyVisible(video) ? (
+            <Link
+              href={`/video/${video.slug}-${video.id}`}
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Voir sur le site
+            </Link>
+          ) : null}
+        </div>
       </td>
       <td className="hidden px-3 py-3 text-xs text-muted-foreground sm:table-cell">
         <div>{video.processingStatus}</div>
@@ -91,20 +115,45 @@ function VideoModRow({ video }: { video: AdminVideoModRow }) {
         <div className="mt-0.5">Pub. {formatDate(video.publishedAt)}</div>
       </td>
       <td className="px-3 py-3">
-        <select
-          className="mb-2 h-8 w-full max-w-[11rem] rounded-md border border-input bg-background px-2 text-sm"
-          value={moderationState}
-          onChange={(e) => setModerationState(e.target.value)}
-          aria-label="État de modération"
-        >
-          {MOD_STATES.map((s) => (
-            <option key={s} value={s}>
-              {modLabel(s)}
-            </option>
-          ))}
-        </select>
+        <div className="mb-2 flex flex-wrap gap-2">
+          {MOD_STATES.map((state) => {
+            const active = moderationState === state;
+            const disabled =
+              mutation.isPending ||
+              (state === video.moderationState && notes.trim().length === 0);
+
+            return (
+              <Button
+                key={state}
+                type="button"
+                size="sm"
+                variant={
+                  state === "BLOCKED"
+                    ? active
+                      ? "destructive"
+                      : "outline"
+                    : active
+                      ? "default"
+                      : "outline"
+                }
+                disabled={disabled}
+                onClick={() => submitState(state)}
+              >
+                {state === "NONE"
+                  ? "Approuver"
+                  : state === "LIMITED"
+                    ? "Limiter"
+                    : "Bloquer"}
+              </Button>
+            );
+          })}
+        </div>
+        <p className="mb-2 text-xs text-muted-foreground">
+          État actuel : {modLabel(moderationState)}.
+        </p>
         <p className="mb-2 text-[0.65rem] leading-snug text-muted-foreground">
-          « Bloquée » retire la vidéo du catalogue public.
+          « Bloquer » retire la vidéo du catalogue public. « Approuver » remet
+          l’état normal.
         </p>
         <Input
           placeholder="Note (optionnel)"
@@ -112,15 +161,11 @@ function VideoModRow({ video }: { video: AdminVideoModRow }) {
           onChange={(e) => setNotes(e.target.value)}
           className="mb-2 h-8 max-w-[14rem] text-xs"
         />
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          disabled={!dirty || mutation.isPending}
-          onClick={() => mutation.mutate()}
-        >
-          {mutation.isPending ? "…" : "Enregistrer"}
-        </Button>
+        {dirty ? (
+          <p className="text-xs text-muted-foreground">
+            La note sera ajoutée à la prochaine action.
+          </p>
+        ) : null}
         {mutation.isError ? (
           <p className="mt-1 max-w-[12rem] text-xs text-destructive">
             {mutation.error instanceof Error

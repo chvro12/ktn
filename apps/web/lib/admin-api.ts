@@ -40,6 +40,38 @@ export type AdminVideoModRow = {
   watchPath: string;
 };
 
+export type AdminVideoDetail = {
+  video: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    thumbnailUrl: string | null;
+    hlsUrl: string | null;
+    durationSec: number | null;
+    viewsCount: number;
+    likesCount: number;
+    moderationState: string;
+    processingStatus: string;
+    visibility: string;
+    publishedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    watchPath: string;
+    publicWatchPath: string;
+    isPubliclyVisible: boolean;
+    openReportsCount: number;
+    totalReportsCount: number;
+    channel: {
+      id: string;
+      handle: string;
+      name: string;
+      avatarUrl: string | null;
+      verified: boolean;
+    };
+  };
+};
+
 export type AdminModerationActionRow = {
   id: string;
   targetType: string;
@@ -139,6 +171,14 @@ export async function patchAdminVideoModeration(
   });
   if (!res.ok) await readApiError(res, "Modération impossible");
   return res.json() as Promise<{ video: AdminVideoModRow }>;
+}
+
+export async function fetchAdminVideoDetail(
+  videoId: string,
+): Promise<AdminVideoDetail> {
+  const res = await apiFetch(`/v1/admin/videos/${videoId}`);
+  if (!res.ok) await readApiError(res, "Détail vidéo indisponible");
+  return res.json() as Promise<AdminVideoDetail>;
 }
 
 export async function fetchModerationActions(cursor?: string): Promise<{

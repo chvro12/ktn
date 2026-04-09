@@ -328,6 +328,7 @@ export async function uploadStudioSource(
 export async function canReadMediaAsset(
   videoId: string,
   relativePath: string,
+  allowAdminPreview = false,
 ): Promise<boolean> {
   const video = await prisma.video.findUnique({
     where: { id: videoId },
@@ -337,11 +338,21 @@ export async function canReadMediaAsset(
       publishedAt: true,
     },
   });
-  if (!video || video.processingStatus !== VideoProcessingStatus.READY) {
+  if (!video) {
     return false;
   }
-  if (!video.publishedAt || video.visibility === VideoVisibility.PRIVATE) {
-    return false;
+
+  if (allowAdminPreview) {
+    if (!relativePath.startsWith("hls/")) {
+      return false;
+    }
+  } else {
+    if (video.processingStatus !== VideoProcessingStatus.READY) {
+      return false;
+    }
+    if (!video.publishedAt || video.visibility === VideoVisibility.PRIVATE) {
+      return false;
+    }
   }
 
   const root = resolve(getMediaRoot(), videoId);

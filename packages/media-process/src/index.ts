@@ -78,6 +78,10 @@ export async function processUploadedVideo(
 
   const video = await deps.prisma.video.findUnique({ where: { id: videoId } });
   if (!video?.sourceAssetKey) {
+    console.error(
+      "[media-process] %s: pas de sourceAssetKey après claim — FAILED",
+      videoId,
+    );
     await deps.prisma.video.update({
       where: { id: videoId },
       data: { processingStatus: VideoProcessingStatus.FAILED },
@@ -88,31 +92,55 @@ export async function processUploadedVideo(
   const root = deps.getMediaRoot();
   const sourcePath = join(root, videoId, video.sourceAssetKey);
   const hlsDir = join(root, videoId, "hls");
-  await mkdir(hlsDir, { recursive: true });
+
+  async function markFailed(reason: string, err: unknown) {
+    console.error(
+      "[media-process] %s: %s — %s",
+      videoId,
+      reason,
+      err instanceof Error ? err.message : String(err),
+    );
+    await deps.prisma.video.update({
+      where: { id: videoId },
+      data: { processingStatus: VideoProcessingStatus.FAILED },
+    });
+  }
+
+  try {
+    await mkdir(hlsDir, { recursive: true });
+  } catch (e) {
+    await markFailed("impossible de créer le dossier HLS", e);
+    return true;
+  }
 
   const base = deps.getPublicMediaBase();
   const skip = process.env.MEDIA_SKIP_TRANSCODE === "1";
 
   if (skip) {
-    const ext =
-      video.sourceAssetKey.slice(video.sourceAssetKey.lastIndexOf(".")) ||
-      ".mp4";
-    const name = `passthrough${ext}`;
-    const dest = join(hlsDir, name);
-    await copyFile(sourcePath, dest);
-    const dur = await ffprobeDuration(dest);
-    const hlsUrl = `${base}/v1/media/${videoId}/hls/${name}`;
-    await deps.prisma.video.update({
-      where: { id: videoId },
-      data: {
-        processingStatus: VideoProcessingStatus.READY,
-        hlsUrl,
-        playbackManifestKey: `hls/${name}`,
-        durationSec: dur ?? video.durationSec ?? undefined,
-        publishedAt: !video.publishedAt ? new Date() : video.publishedAt,
-      },
-    });
-    return true;
+    try {
+      const ext =
+        video.sourceAssetKey.slice(video.sourceAssetKey.lastIndexOf(".")) ||
+        ".mp4";
+      const name = `passthrough${ext}`;
+      const dest = join(hlsDir, name);
+      await copyFile(sourcePath, dest);
+      const dur = await ffprobeDuration(dest);
+      const hlsUrl = `${base}/v1/media/${videoId}/hls/${name}`;
+      await deps.prisma.video.update({
+        where: { id: videoId },
+        data: {
+          processingStatus: VideoProcessingStatus.READY,
+          hlsUrl,
+          playbackManifestKey: `hls/${name}`,
+          durationSec: dur ?? video.durationSec ?? undefined,
+          publishedAt: !video.publishedAt ? new Date() : video.publishedAt,
+        },
+      });
+      return true;
+    } catch (e) {
+      await markFailed("passthrough (MEDIA_SKIP_TRANSCODE)", e);
+      return true;
+    }
   }
 
   const m3u8 = join(hlsDir, "stream.m3u8");
@@ -139,44 +167,49 @@ export async function processUploadedVideo(
       join(hlsDir, "segment%03d.ts"),
       m3u8,
     ]);
-  } catch {
-    await deps.prisma.video.update({
-      where: { id: videoId },
-      data: { processingStatus: VideoProcessingStatus.FAILED },
-    });
+  } catch (e) {
+    await markFailed(
+      "ffmpeg HLS (vérifier que ffmpeg est installé sur le serveur / worker)",
+      e,
+    );
     return true;
   }
 
-  const dur = await ffprobeDuration(sourcePath);
-  const thumb = join(hlsDir, "thumb.jpg");
   try {
-    await run("ffmpeg", [
-      "-y",
-      "-ss",
-      "1",
-      "-i",
-      sourcePath,
-      "-vframes",
-      "1",
-      thumb,
-    ]);
-  } catch {
-    /* miniature optionnelle */
+    const dur = await ffprobeDuration(sourcePath);
+    const thumb = join(hlsDir, "thumb.jpg");
+    try {
+      await run("ffmpeg", [
+        "-y",
+        "-ss",
+        "1",
+        "-i",
+        sourcePath,
+        "-vframes",
+        "1",
+        thumb,
+      ]);
+    } catch {
+      /* miniature optionnelle */
+    }
+
+    const hlsUrl = `${base}/v1/media/${videoId}/hls/stream.m3u8`;
+    const thumbUrl = `${base}/v1/media/${videoId}/hls/thumb.jpg`;
+
+    await deps.prisma.video.update({
+      where: { id: videoId },
+      data: {
+        processingStatus: VideoProcessingStatus.READY,
+        hlsUrl,
+        playbackManifestKey: "hls/stream.m3u8",
+        durationSec: dur ?? undefined,
+        thumbnailUrl: thumbUrl,
+        publishedAt: !video.publishedAt ? new Date() : video.publishedAt,
+      },
+    });
+    return true;
+  } catch (e) {
+    await markFailed("finalisation après transcodage HLS", e);
+    return true;
   }
-
-  const hlsUrl = `${base}/v1/media/${videoId}/hls/stream.m3u8`;
-  const thumbUrl = `${base}/v1/media/${videoId}/hls/thumb.jpg`;
-
-  await deps.prisma.video.update({
-    where: { id: videoId },
-    data: {
-      processingStatus: VideoProcessingStatus.READY,
-      hlsUrl,
-      playbackManifestKey: "hls/stream.m3u8",
-      durationSec: dur ?? undefined,
-      thumbnailUrl: thumbUrl,
-      publishedAt: !video.publishedAt ? new Date() : video.publishedAt,
-    },
-  });
-  return true;
 }

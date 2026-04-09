@@ -2,6 +2,7 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import Fastify from "fastify";
+import { createCorsOrigin } from "./lib/cors-config.js";
 import { registerChannelPublicRoutes } from "./modules/channels/channel-public.routes.js";
 import { registerChannelRoutes } from "./modules/channels/channel.routes.js";
 import { registerIdentityRoutes } from "./modules/identity/auth.routes.js";
@@ -19,7 +20,7 @@ export async function buildApp() {
   });
 
   await app.register(cors, {
-    origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
+    origin: createCorsOrigin(),
     credentials: true,
   });
 

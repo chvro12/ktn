@@ -7,7 +7,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Manifests d'abord pour le cache Docker
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc ./
 COPY packages/db/package.json             ./packages/db/
 COPY packages/db/prisma/                  ./packages/db/prisma/
 COPY packages/media-process/package.json  ./packages/media-process/

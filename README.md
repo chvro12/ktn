@@ -34,6 +34,18 @@ Données de démo après migration : `pnpm db:seed`.
 Transcodage vidéo (optionnel, autre terminal) : `pnpm dev:worker`.  
 Fichiers média : par défaut `data/media/` (voir `.env.example` pour les réglages).
 
+## Déploiement Vercel (frontend)
+
+Le fichier **`vercel.json` à la racine** force le preset **Next.js** et le build `pnpm --filter @katante/web build` (la racine du monorepo n’a pas `next` dans `package.json`, sans quoi Vercel peut se tromper et demander un dossier de sortie **`public`**).
+
+Dans le tableau de bord Vercel → *Project Settings* → *Build & Development* :
+
+- **Root Directory** : laisse vide (racine du dépôt) **ou** mets `apps/web` ; dans ce second cas, le `vercel.json` utile est surtout celui dans `apps/web/`.
+- **Output Directory** : laisse le champ **vide** / désactive l’override (ne mets pas `public`).
+- **Framework Preset** : Next.js (souvent déduit après correction ci‑dessus).
+
+Variables d’environnement côté production : au minimum `NEXT_PUBLIC_API_URL` et `NEXT_PUBLIC_SITE_URL` (URL réelles, pas `localhost`).
+
 ## Documentation technique
 
 Référence d’architecture, routes HTTP et schéma de données : `docs/PHASE1_ARCHITECTURE.md`, `packages/db/prisma/schema.prisma`.

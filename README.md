@@ -44,7 +44,15 @@ Dans le tableau de bord Vercel → *Project Settings* → *Build & Development* 
 - **Output Directory** : laisse le champ **vide** / désactive l’override (ne mets pas `public`).
 - **Framework Preset** : Next.js (souvent déduit après correction ci‑dessus).
 
-Variables d’environnement côté production : `NEXT_PUBLIC_SITE_URL` ; pour l’API, **`API_URL`** (https, lue au runtime — idéal pour les previews sans rebuild) et/ou **`NEXT_PUBLIC_API_URL`** (même valeur).
+Variables d’environnement côté production (Vercel → *Settings* → *Environment Variables*) :
+
+- **`API_URL`** et/ou **`NEXT_PUBLIC_API_URL`** : URL https de l’API Railway (même valeur).
+- **`PUBLIC_MEDIA_BASE_URL`** : même base que l’API (ex. `https://ton-api.up.railway.app`). Sert aux `remotePatterns` de `next/image` au build ; sans elle, les miniatures peuvent rester sur `localhost` et ne pas s’afficher en prod.
+
+## Déploiement Railway (API)
+
+- **`ffmpeg`** n’est pas fourni par défaut : sans lui, le transcodage échoue et les vidéos passent en **FAILED**. Sur un service minimal, définis **`MEDIA_SKIP_TRANSCODE=1`** puis *Redeploy* : le code copie la source brute vers HLS « passthrough » (lecture navigateur selon le format).
+- **`PUBLIC_MEDIA_BASE_URL`** : URL publique de cette API (https). Les champs `hlsUrl` / `thumbnailUrl` en base utilisent cette base ; aligne-la sur l’URL Railway réelle.
 
 ## Documentation technique
 

@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import { fetchAuthMe } from "@/lib/auth-me";
+import { isAdminRole } from "@/lib/roles";
 
 function LibraryMenu() {
   const linkClass =
@@ -94,7 +95,7 @@ export function HeaderNav() {
           >
             Créer une chaîne
           </Link>
-          {sessionUser.role === "ADMIN" ? (
+          {isAdminRole(sessionUser.role) ? (
             <Link
               href="/admin"
               className="hidden rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-card hover:text-foreground sm:inline-flex"

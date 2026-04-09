@@ -15,7 +15,8 @@ export const publishedWhere: Prisma.VideoWhereInput = {
   publishedAt: { not: null },
 };
 
-async function repairEligiblePublishedVideos() {
+/** Appelée avant listes publiques et depuis le studio pour aligner `publishedAt` avec le fil d’accueil. */
+export async function repairEligiblePublishedVideos() {
   await prisma.video.updateMany({
     where: {
       visibility: VideoVisibility.PUBLIC,

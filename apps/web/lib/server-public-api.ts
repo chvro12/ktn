@@ -11,10 +11,26 @@ export async function fetchFeedServer(cursor?: string): Promise<FeedResponse> {
     if (cursor) u.searchParams.set("cursor", cursor);
     const res = await fetch(u.toString(), { cache: "no-store" });
     if (!res.ok) {
+      const snippet = await res.text().catch(() => "");
+      console.error(
+        "[fetchFeedServer]",
+        res.status,
+        u.origin,
+        snippet.slice(0, 400),
+      );
       return { items: [], nextCursor: null };
     }
-    return res.json() as Promise<FeedResponse>;
-  } catch {
+    const body = (await res.json()) as Partial<FeedResponse>;
+    if (!Array.isArray(body.items)) {
+      console.error("[fetchFeedServer] réponse invalide: items absent");
+      return { items: [], nextCursor: null };
+    }
+    return {
+      items: body.items,
+      nextCursor: body.nextCursor ?? null,
+    };
+  } catch (e) {
+    console.error("[fetchFeedServer] erreur réseau", e);
     return { items: [], nextCursor: null };
   }
 }

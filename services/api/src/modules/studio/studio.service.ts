@@ -11,6 +11,7 @@ import {
 } from "@katante/db";
 import { AppError } from "../../common/errors.js";
 import { prisma } from "../../lib/prisma.js";
+import { repairEligiblePublishedVideos } from "../videos/video-public.service.js";
 import { processUploadedVideo } from "@katante/media-process";
 import {
   ensureVideoDir,
@@ -125,6 +126,7 @@ export async function createStudioVideo(
 }
 
 export async function listStudioVideos(userId: string) {
+  await repairEligiblePublishedVideos();
   const channel = await prisma.channel.findUnique({
     where: { ownerUserId: userId },
     select: { id: true },

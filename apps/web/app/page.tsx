@@ -2,6 +2,10 @@ import { AppShell } from "@/components/layout/app-shell";
 import { VideoGrid } from "@/components/video/video-grid";
 import { fetchFeedServer } from "@/lib/server-public-api";
 
+/** Jamais de page d’accueil figée au build (fil vide alors que l’API a des vidéos). */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function Home() {
   const feed = await fetchFeedServer();
 

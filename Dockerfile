@@ -20,9 +20,10 @@ COPY workers/media/package.json           ./workers/media/
 # Install complet — postinstall : prisma generate + build media-process
 RUN pnpm install --frozen-lockfile
 
-# Sources restantes (api, workers)
-COPY services/ ./services/
-COPY workers/  ./workers/
+# Sources restantes — db/src requis pour que tsc résolve @katante/db
+COPY packages/db/src/ ./packages/db/src/
+COPY services/        ./services/
+COPY workers/         ./workers/
 
 # Compile @katante/api (media-process déjà compilé par postinstall)
 RUN pnpm --filter @katante/api build

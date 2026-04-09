@@ -11,10 +11,12 @@ import {
 } from "@katante/db";
 import { AppError } from "../../common/errors.js";
 import { prisma } from "../../lib/prisma.js";
+import { processUploadedVideo } from "@katante/media-process";
 import {
   ensureVideoDir,
   resolveMediaPath,
   getMediaRoot,
+  getPublicMediaBase,
 } from "../../lib/media-config.js";
 import type { CreateStudioVideoBody } from "./studio.schemas.js";
 import { normalize, resolve, sep } from "node:path";
@@ -112,7 +114,7 @@ export async function createStudioVideo(
       slug,
       title: body.title.trim(),
       description: body.description?.trim() ?? "",
-      visibility: body.visibility ?? VideoVisibility.PRIVATE,
+      visibility: body.visibility ?? VideoVisibility.PUBLIC,
       processingStatus: VideoProcessingStatus.DRAFT,
       moderationState: VideoModerationState.NONE,
     },
@@ -317,6 +319,15 @@ export async function uploadStudioSource(
       },
     }),
   ]);
+
+  const mediaDeps = {
+    prisma,
+    getMediaRoot,
+    getPublicMediaBase,
+  };
+  void processUploadedVideo(mediaDeps, videoId).catch((err) => {
+    console.error("[studio] transcodage après upload", err);
+  });
 
   return {
     ok: true as const,

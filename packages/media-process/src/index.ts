@@ -2,14 +2,16 @@ import { spawn } from "node:child_process";
 import { execFile } from "node:child_process";
 import { copyFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { VideoProcessingStatus, VideoVisibility } from "@katante/db";
-import { getMediaRoot, getPublicMediaBase } from "./media-root.js";
-import { prisma } from "./prisma.js";
+import type { PrismaClient } from "@prisma/client";
+import { VideoProcessingStatus, VideoVisibility } from "@prisma/client";
 
-function run(
-  cmd: string,
-  args: string[],
-): Promise<void> {
+export type MediaProcessDeps = {
+  prisma: PrismaClient;
+  getMediaRoot: () => string;
+  getPublicMediaBase: () => string;
+};
+
+function run(cmd: string, args: string[]): Promise<void> {
   return new Promise((res, rej) => {
     const p = spawn(cmd, args, { stdio: "inherit" });
     p.on("error", rej);
@@ -44,29 +46,63 @@ async function ffprobeDuration(file: string): Promise<number | null> {
   }
 }
 
-export async function processVideoJob(videoId: string): Promise<void> {
-  const video = await prisma.video.findUnique({ where: { id: videoId } });
-  if (!video?.sourceAssetKey) {
-    throw new Error("video sans source");
+/**
+ * Réclame une vidéo UPLOADED (atomique) puis transcode.
+ * @returns true si ce processus a fait le travail, false si une autre instance l’a déjà prise / déjà prête.
+ */
+export async function processUploadedVideo(
+  deps: MediaProcessDeps,
+  videoId: string,
+): Promise<boolean> {
+  const claimed = await deps.prisma.video.updateMany({
+    where: {
+      id: videoId,
+      processingStatus: VideoProcessingStatus.UPLOADED,
+    },
+    data: { processingStatus: VideoProcessingStatus.PROCESSING },
+  });
+
+  if (claimed.count === 0) {
+    const v = await deps.prisma.video.findUnique({
+      where: { id: videoId },
+      select: { processingStatus: true },
+    });
+    if (
+      v?.processingStatus === VideoProcessingStatus.READY ||
+      v?.processingStatus === VideoProcessingStatus.PROCESSING
+    ) {
+      return false;
+    }
+    return false;
   }
 
-  const root = getMediaRoot();
+  const video = await deps.prisma.video.findUnique({ where: { id: videoId } });
+  if (!video?.sourceAssetKey) {
+    await deps.prisma.video.update({
+      where: { id: videoId },
+      data: { processingStatus: VideoProcessingStatus.FAILED },
+    });
+    return true;
+  }
+
+  const root = deps.getMediaRoot();
   const sourcePath = join(root, videoId, video.sourceAssetKey);
   const hlsDir = join(root, videoId, "hls");
   await mkdir(hlsDir, { recursive: true });
 
-  const base = getPublicMediaBase();
+  const base = deps.getPublicMediaBase();
   const skip = process.env.MEDIA_SKIP_TRANSCODE === "1";
 
   if (skip) {
     const ext =
-      video.sourceAssetKey.slice(video.sourceAssetKey.lastIndexOf(".")) || ".mp4";
+      video.sourceAssetKey.slice(video.sourceAssetKey.lastIndexOf(".")) ||
+      ".mp4";
     const name = `passthrough${ext}`;
     const dest = join(hlsDir, name);
     await copyFile(sourcePath, dest);
     const dur = await ffprobeDuration(dest);
     const hlsUrl = `${base}/v1/media/${videoId}/hls/${name}`;
-    await prisma.video.update({
+    await deps.prisma.video.update({
       where: { id: videoId },
       data: {
         processingStatus: VideoProcessingStatus.READY,
@@ -79,7 +115,7 @@ export async function processVideoJob(videoId: string): Promise<void> {
             : video.publishedAt ?? undefined,
       },
     });
-    return;
+    return true;
   }
 
   const m3u8 = join(hlsDir, "stream.m3u8");
@@ -107,11 +143,11 @@ export async function processVideoJob(videoId: string): Promise<void> {
       m3u8,
     ]);
   } catch {
-    await prisma.video.update({
+    await deps.prisma.video.update({
       where: { id: videoId },
       data: { processingStatus: VideoProcessingStatus.FAILED },
     });
-    return;
+    return true;
   }
 
   const dur = await ffprobeDuration(sourcePath);
@@ -134,7 +170,7 @@ export async function processVideoJob(videoId: string): Promise<void> {
   const hlsUrl = `${base}/v1/media/${videoId}/hls/stream.m3u8`;
   const thumbUrl = `${base}/v1/media/${videoId}/hls/thumb.jpg`;
 
-  await prisma.video.update({
+  await deps.prisma.video.update({
     where: { id: videoId },
     data: {
       processingStatus: VideoProcessingStatus.READY,
@@ -148,4 +184,5 @@ export async function processVideoJob(videoId: string): Promise<void> {
           : video.publishedAt ?? undefined,
     },
   });
+  return true;
 }

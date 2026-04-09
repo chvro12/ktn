@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@9.15.4",
   "scripts": {
-    "postinstall": "pnpm db:generate",
+    "postinstall": "pnpm db:generate && pnpm --filter @katante/media-process build",
     "dev": "pnpm --parallel --filter @katante/api --filter @katante/web run dev",
     "dev:api": "pnpm --filter @katante/api dev",
     "dev:web": "pnpm --filter @katante/web dev",
@@ -16,7 +16,7 @@
     "db:seed": "dotenv -e ./.env -- pnpm --filter @katante/db seed",
     "db:create-admin": "dotenv -e ./.env -- pnpm --filter @katante/db create-admin",
     "build": "pnpm --filter @katante/web build",
-    "build:api": "pnpm --filter @katante/api build",
+    "build:api": "pnpm --filter @katante/media-process build && pnpm --filter @katante/api build",
     "start": "pnpm --filter @katante/api start",
     "build:all": "pnpm run -r --if-present build",
     "lint": "pnpm run -r --if-present lint"

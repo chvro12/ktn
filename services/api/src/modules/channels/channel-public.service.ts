@@ -15,6 +15,21 @@ const publishedWhere: Prisma.VideoWhereInput = {
   publishedAt: { not: null },
 };
 
+async function repairEligiblePublishedVideosForChannel(channelId: string) {
+  await prisma.video.updateMany({
+    where: {
+      channelId,
+      visibility: VideoVisibility.PUBLIC,
+      processingStatus: VideoProcessingStatus.READY,
+      moderationState: { not: VideoModerationState.BLOCKED },
+      publishedAt: null,
+    },
+    data: {
+      publishedAt: new Date(),
+    },
+  });
+}
+
 const videoCardSelect = {
   id: true,
   slug: true,
@@ -53,6 +68,7 @@ export async function listChannelVideos(
   limit: number,
   cursor?: string,
 ) {
+  await repairEligiblePublishedVideosForChannel(channelId);
   const take = Math.min(Math.max(limit, 1), 48);
   const decoded = cursor ? decodeCursor(cursor) : null;
 

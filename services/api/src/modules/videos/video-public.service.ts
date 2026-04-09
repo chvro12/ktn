@@ -15,6 +15,20 @@ export const publishedWhere: Prisma.VideoWhereInput = {
   publishedAt: { not: null },
 };
 
+async function repairEligiblePublishedVideos() {
+  await prisma.video.updateMany({
+    where: {
+      visibility: VideoVisibility.PUBLIC,
+      processingStatus: VideoProcessingStatus.READY,
+      moderationState: { not: VideoModerationState.BLOCKED },
+      publishedAt: null,
+    },
+    data: {
+      publishedAt: new Date(),
+    },
+  });
+}
+
 const channelPublicSelect = {
   handle: true,
   name: true,
@@ -33,6 +47,7 @@ export const videoCardSelect = {
 } satisfies Prisma.VideoSelect;
 
 export async function listPublishedVideos(limit: number, cursor?: string) {
+  await repairEligiblePublishedVideos();
   const take = Math.min(Math.max(limit, 1), 48);
   const decoded = cursor ? decodeCursor(cursor) : null;
 
@@ -84,6 +99,7 @@ export function parseVideoSlugId(param: string): { slug: string; id: string } {
 }
 
 export async function getPublishedVideoById(id: string) {
+  await repairEligiblePublishedVideos();
   const video = await prisma.video.findFirst({
     where: {
       id,
@@ -102,6 +118,7 @@ export async function getPublishedVideoById(id: string) {
 }
 
 export async function getPublishedVideoBySlugId(param: string) {
+  await repairEligiblePublishedVideos();
   const { slug, id } = parseVideoSlugId(param);
   const video = await prisma.video.findFirst({
     where: {
@@ -144,6 +161,7 @@ export async function searchPublishedVideos(
   limit: number,
   cursor?: string,
 ) {
+  await repairEligiblePublishedVideos();
   const q = query.trim();
   if (q.length < 2) {
     throw new AppError(400, "QUERY_TOO_SHORT", "Requête trop courte (min. 2 caractères)");

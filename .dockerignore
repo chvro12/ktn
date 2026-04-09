@@ -1,0 +1,19 @@
+# Dépendances locales (réinstallées dans le build Docker)
+node_modules
+**/node_modules
+
+# Build artifacts locaux
+**/dist
+apps/web/.next
+
+# App web (non nécessaire pour l'image API)
+apps/
+
+# Fichiers sensibles / inutiles
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+*.md
+data/

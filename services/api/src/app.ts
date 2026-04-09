@@ -4,6 +4,7 @@ import multipart from "@fastify/multipart";
 import Fastify from "fastify";
 import { createCorsOrigin } from "./lib/cors-config.js";
 import { registerChannelPublicRoutes } from "./modules/channels/channel-public.routes.js";
+import { registerDebugPublicRoutes } from "./modules/debug-public.routes.js";
 import { registerChannelRoutes } from "./modules/channels/channel.routes.js";
 import { registerIdentityRoutes } from "./modules/identity/auth.routes.js";
 import { registerEngagementRoutes } from "./modules/engagement/engagement.routes.js";
@@ -31,6 +32,8 @@ export async function buildApp() {
   });
 
   app.get("/health", async () => ({ status: "ok" }));
+
+  await registerDebugPublicRoutes(app);
 
   await registerIdentityRoutes(app);
   await registerChannelRoutes(app);

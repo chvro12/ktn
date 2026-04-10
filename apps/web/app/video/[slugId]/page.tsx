@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
@@ -111,11 +110,11 @@ export default async function WatchPage({ params }: Props) {
             ) : (
               <>
                 {video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl) ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={video.thumbnailUrl}
                     alt={video.title}
-                    fill
-                    className="object-cover opacity-90"
+                    className="absolute inset-0 h-full w-full object-cover opacity-90"
                   />
                 ) : null}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 px-4 text-center text-sm text-white">
@@ -154,11 +153,10 @@ export default async function WatchPage({ params }: Props) {
               >
                 <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-medium text-muted-foreground ring-1 ring-border">
                   {video.channel.avatarUrl && isAbsoluteUrl(video.channel.avatarUrl) ? (
-                    <Image
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       src={video.channel.avatarUrl}
                       alt=""
-                      width={44}
-                      height={44}
                       className="size-full object-cover"
                     />
                   ) : (

@@ -58,13 +58,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function WatchPage({ params }: Props) {
   const { slugId } = await params;
-  const video = await fetchVideoDetailServer(slugId);
+  let video: Awaited<ReturnType<typeof fetchVideoDetailServer>>;
+  try {
+    video = await fetchVideoDetailServer(slugId);
+  } catch (err) {
+    console.error("[WatchPage] fetchVideoDetailServer threw:", err);
+    throw err;
+  }
   if (!video) notFound();
 
-  const channelFeed = await fetchChannelVideosPage(video.channel.handle);
+  // Defensive: channel might be null if relation is broken in DB
+  if (!video.channel) {
+    console.error("[WatchPage] video.channel is null for slugId:", slugId, "videoId:", video.id);
+    notFound();
+  }
+
+  let channelFeed: Awaited<ReturnType<typeof fetchChannelVideosPage>>;
+  try {
+    channelFeed = await fetchChannelVideosPage(video.channel.handle);
+  } catch (err) {
+    console.error("[WatchPage] fetchChannelVideosPage threw:", err);
+    channelFeed = null;
+  }
   const relatedVideos =
-    channelFeed?.videos.items
-      .filter((v) => v.id !== video.id)
+    channelFeed?.videos?.items
+      .filter((v) => v.id !== video!.id)
       .slice(0, 12) ?? [];
 
   return (

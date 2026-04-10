@@ -19,6 +19,7 @@ import {
   fetchChannelVideosPage,
   fetchVideoDetailServer,
 } from "@/lib/server-public-api";
+import { isAbsoluteUrl } from "@/lib/utils";
 
 type Props = { params: Promise<{ slugId: string }> };
 
@@ -42,15 +43,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: desc,
       type: "video.other",
       url: canonicalPath,
-      images: video.thumbnailUrl
+      images: video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl)
         ? [{ url: video.thumbnailUrl, width: 1280, height: 720 }]
         : undefined,
     },
     twitter: {
-      card: video.hlsUrl ? "player" : "summary_large_image",
+      card: video.hlsUrl && isAbsoluteUrl(video.hlsUrl) ? "player" : "summary_large_image",
       title,
       description: desc,
-      images: video.thumbnailUrl ? [video.thumbnailUrl] : undefined,
+      images: video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl) ? [video.thumbnailUrl] : undefined,
     },
   };
 }
@@ -74,16 +75,16 @@ export default async function WatchPage({ params }: Props) {
             className="relative aspect-video w-full overflow-hidden rounded-[1.25rem] border border-border/70 bg-black shadow-[0_30px_80px_-50px_rgba(0,0,0,0.55)] sm:rounded-[1.75rem]"
             aria-label="Lecteur vidéo"
           >
-            {video.hlsUrl ? (
+            {video.hlsUrl && isAbsoluteUrl(video.hlsUrl) ? (
               <WatchVideoPlayer
                 slugId={`${video.slug}-${video.id}`}
                 hlsUrl={video.hlsUrl}
-                poster={video.thumbnailUrl}
+                poster={video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl) ? video.thumbnailUrl : undefined}
                 durationSec={video.durationSec}
               />
             ) : (
               <>
-                {video.thumbnailUrl ? (
+                {video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl) ? (
                   <Image
                     src={video.thumbnailUrl}
                     alt={video.title}
@@ -127,7 +128,7 @@ export default async function WatchPage({ params }: Props) {
                 className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-border/70 bg-background/70 px-3 py-3 transition hover:bg-background focus-visible:outline focus-visible:ring-2 focus-visible:ring-ring sm:flex-initial sm:min-w-[16rem]"
               >
                 <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-medium text-muted-foreground ring-1 ring-border">
-                  {video.channel.avatarUrl ? (
+                  {video.channel.avatarUrl && isAbsoluteUrl(video.channel.avatarUrl) ? (
                     <Image
                       src={video.channel.avatarUrl}
                       alt=""

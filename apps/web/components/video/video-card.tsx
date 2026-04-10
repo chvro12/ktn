@@ -6,18 +6,10 @@ import {
   formatPublishedShort,
   formatViewCount,
 } from "@/lib/format-media";
+import { isAbsoluteUrl } from "@/lib/utils";
 
 function videoPath(v: Pick<VideoCardDto, "slug" | "id">): string {
   return `/video/${v.slug}-${v.id}`;
-}
-
-function isAbsoluteUrl(url: string): boolean {
-  try {
-    const u = new URL(url);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
 }
 
 export function VideoCard({ video }: { video: VideoCardDto }) {

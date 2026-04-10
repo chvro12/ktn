@@ -11,6 +11,15 @@ function videoPath(v: Pick<VideoCardDto, "slug" | "id">): string {
   return `/video/${v.slug}-${v.id}`;
 }
 
+function isAbsoluteUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function VideoCard({ video }: { video: VideoCardDto }) {
   const href = videoPath(video);
   return (
@@ -21,7 +30,7 @@ export function VideoCard({ video }: { video: VideoCardDto }) {
       >
         <div className="overflow-hidden rounded-[1.5rem] border border-border/70 bg-card/80 shadow-[0_18px_45px_-35px_rgba(23,23,23,0.45)]">
           <div className="relative aspect-video overflow-hidden bg-muted">
-            {video.thumbnailUrl ? (
+            {video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl) ? (
               <Image
                 src={video.thumbnailUrl}
                 alt={video.title}

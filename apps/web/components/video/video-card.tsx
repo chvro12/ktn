@@ -44,7 +44,7 @@ export function VideoCard({ video }: { video: VideoCardDto }) {
           </div>
           <div className="space-y-2 p-4">
             <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              <span className="truncate">{video.channel.name}</span>
+              <span className="truncate">{video.channel?.name ?? ""}</span>
               <span className="size-1 rounded-full bg-border" aria-hidden />
               <span>{formatViewCount(video.viewsCount)}</span>
             </div>

@@ -8,6 +8,7 @@ export const revalidate = 0;
 
 export default async function Home() {
   const feed = await fetchFeedServer();
+  const items = feed.items.filter((v) => v.channel != null);
 
   return (
     <AppShell>
@@ -22,7 +23,7 @@ export default async function Home() {
             </p>
           </div>
         </header>
-        <VideoGrid items={feed.items} />
+        <VideoGrid items={items} />
       </div>
     </AppShell>
   );

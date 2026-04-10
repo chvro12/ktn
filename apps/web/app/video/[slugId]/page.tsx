@@ -87,7 +87,7 @@ export default async function WatchPage({ params }: Props) {
   }
   const relatedVideos =
     channelFeed?.videos?.items
-      .filter((v) => v.id !== video!.id)
+      .filter((v) => v.id !== video!.id && v.channel != null)
       .slice(0, 12) ?? [];
 
   return (

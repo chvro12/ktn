@@ -24,36 +24,42 @@ import { isAbsoluteUrl } from "@/lib/utils";
 type Props = { params: Promise<{ slugId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slugId } = await params;
-  const video = await fetchVideoDetailServer(slugId);
-  if (!video) {
-    return { title: "Vidéo introuvable" };
+  try {
+    const { slugId } = await params;
+    const video = await fetchVideoDetailServer(slugId);
+    if (!video || !video.channel) {
+      return { title: "Vidéo introuvable" };
+    }
+    const channelName = video.channel.name ?? "";
+    const title = channelName ? `${video.title} · ${channelName}` : video.title;
+    const desc =
+      video.description?.trim() ||
+      (channelName ? `${video.title} — ${channelName}` : video.title);
+    const canonicalPath = `/video/${video.slug}-${video.id}`;
+    return {
+      title: video.title,
+      description: desc,
+      alternates: { canonical: canonicalPath },
+      openGraph: {
+        title,
+        description: desc,
+        type: "video.other",
+        url: canonicalPath,
+        images: video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl)
+          ? [{ url: video.thumbnailUrl, width: 1280, height: 720 }]
+          : undefined,
+      },
+      twitter: {
+        card: video.hlsUrl && isAbsoluteUrl(video.hlsUrl) ? "player" : "summary_large_image",
+        title,
+        description: desc,
+        images: video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl) ? [video.thumbnailUrl] : undefined,
+      },
+    };
+  } catch (err) {
+    console.error("[generateMetadata] error for watch page:", err);
+    return { title: "Katante" };
   }
-  const title = `${video.title} · ${video.channel.name}`;
-  const desc =
-    video.description?.trim() ||
-    `${video.title} — ${video.channel.name}`;
-  const canonicalPath = `/video/${video.slug}-${video.id}`;
-  return {
-    title: video.title,
-    description: desc,
-    alternates: { canonical: canonicalPath },
-    openGraph: {
-      title,
-      description: desc,
-      type: "video.other",
-      url: canonicalPath,
-      images: video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl)
-        ? [{ url: video.thumbnailUrl, width: 1280, height: 720 }]
-        : undefined,
-    },
-    twitter: {
-      card: video.hlsUrl && isAbsoluteUrl(video.hlsUrl) ? "player" : "summary_large_image",
-      title,
-      description: desc,
-      images: video.thumbnailUrl && isAbsoluteUrl(video.thumbnailUrl) ? [video.thumbnailUrl] : undefined,
-    },
-  };
 }
 
 export default async function WatchPage({ params }: Props) {
@@ -72,6 +78,8 @@ export default async function WatchPage({ params }: Props) {
     console.error("[WatchPage] video.channel is null for slugId:", slugId, "videoId:", video.id);
     notFound();
   }
+
+  console.log("[WatchPage] rendering slugId:", slugId, "hlsUrl:", video.hlsUrl?.slice(0, 60), "thumb:", video.thumbnailUrl?.slice(0, 60));
 
   let channelFeed: Awaited<ReturnType<typeof fetchChannelVideosPage>>;
   try {
@@ -108,7 +116,6 @@ export default async function WatchPage({ params }: Props) {
                     alt={video.title}
                     fill
                     className="object-cover opacity-90"
-                    priority
                   />
                 ) : null}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 px-4 text-center text-sm text-white">
@@ -155,7 +162,7 @@ export default async function WatchPage({ params }: Props) {
                       className="size-full object-cover"
                     />
                   ) : (
-                    video.channel.name.slice(0, 1).toUpperCase()
+                    (video.channel.name ?? "").slice(0, 1).toUpperCase()
                   )}
                 </span>
                 <span className="min-w-0">

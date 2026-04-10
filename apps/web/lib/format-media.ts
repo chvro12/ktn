@@ -1,4 +1,5 @@
-export function formatViewCount(n: number): string {
+export function formatViewCount(n: number | null | undefined): string {
+  if (n == null) return "0 vue";
   if (n >= 1_000_000) {
     const v = n / 1_000_000;
     const label =
@@ -29,14 +30,19 @@ export function formatDurationSec(sec: number | null | undefined): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function formatPublishedShort(iso: string | null): string {
+export function formatPublishedShort(iso: string | null | undefined | Date): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(d);
+  try {
+    const d = iso instanceof Date ? iso : new Date(iso as string);
+    if (isNaN(d.getTime())) return "";
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(d);
+  } catch {
+    return "";
+  }
 }
 
 /** Durée ISO 8601 pour schema.org VideoObject (ex. PT4M12S). */

@@ -19,6 +19,23 @@ const MIME: Record<string, string> = {
 };
 
 export async function registerMediaRoutes(app: FastifyInstance) {
+  // Preflight CORS pour les requêtes HLS avec header Range (non-simple → preflight)
+  app.options<{ Params: { videoId: string; "*": string } }>(
+    "/v1/media/:videoId/*",
+    async (request, reply) => {
+      const origin = request.headers.origin ?? "*";
+      void reply
+        .header("Access-Control-Allow-Origin", origin)
+        .header("Vary", "Origin")
+        .header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS")
+        .header("Access-Control-Allow-Headers", "Range")
+        .header("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length")
+        .header("Access-Control-Max-Age", "86400")
+        .status(204)
+        .send();
+    },
+  );
+
   app.get<{ Params: { videoId: string; "*": string } }>(
     "/v1/media/:videoId/*",
     { preHandler: optionalAuth },
@@ -36,6 +53,12 @@ export async function registerMediaRoutes(app: FastifyInstance) {
         void reply.status(404).send();
         return;
       }
+
+      // CORS pour HLS.js — fetch() cross-origin sans credentials sur les segments
+      const origin = request.headers.origin;
+      void reply.header("Access-Control-Allow-Origin", origin ?? "*");
+      void reply.header("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length");
+      if (origin) void reply.header("Vary", "Origin");
 
       const root = resolveMediaPath(videoId);
       const full = resolve(root, normalize(rest));

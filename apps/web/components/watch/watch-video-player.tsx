@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { fetchVideoLibraryState } from "@/lib/library-api";
 
@@ -32,13 +32,83 @@ export function WatchVideoPlayer({
   durationSec: number | null;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<import("hls.js").default | null>(null);
   const lastSyncWallRef = useRef(0);
   const resumeAppliedRef = useRef(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     resumeAppliedRef.current = false;
     lastSyncWallRef.current = 0;
   }, [slugId]);
+
+  // ── HLS initialisation ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    setHasError(false);
+
+    // Cas 1 : MP4 / fichier passthrough — lecture native directe
+    if (!hlsUrl.toLowerCase().includes(".m3u8")) {
+      video.src = hlsUrl;
+      return () => {
+        video.removeAttribute("src");
+        video.load();
+      };
+    }
+
+    // Cas 2 : Safari — HLS natif
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = hlsUrl;
+      return () => {
+        video.removeAttribute("src");
+        video.load();
+      };
+    }
+
+    // Cas 3 : Chrome / Firefox — HLS.js
+    let destroyed = false;
+    import("hls.js")
+      .then(({ default: Hls }) => {
+        if (destroyed || !videoRef.current) return;
+        if (!Hls.isSupported()) {
+          setHasError(true);
+          return;
+        }
+
+        const hls = new Hls({
+          startLevel: -1,
+          manifestLoadingMaxRetry: 2,
+          levelLoadingMaxRetry: 2,
+        });
+        hlsRef.current = hls;
+
+        hls.on(Hls.Events.ERROR, (_evt, data) => {
+          if (data.fatal) {
+            setHasError(true);
+            hls.destroy();
+            hlsRef.current = null;
+          }
+        });
+
+        hls.loadSource(hlsUrl);
+        hls.attachMedia(videoRef.current);
+      })
+      .catch(() => {
+        if (!destroyed) setHasError(true);
+      });
+
+    return () => {
+      destroyed = true;
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+      const v = videoRef.current;
+      if (v) {
+        v.removeAttribute("src");
+        v.load();
+      }
+    };
+  }, [hlsUrl]);
 
   const meQuery = useQuery({ queryKey: ["auth", "me"], queryFn: fetchMe });
   const loggedIn = Boolean(meQuery.data && "user" in meQuery.data);
@@ -93,7 +163,7 @@ export function WatchVideoPlayer({
       try {
         el.currentTime = seekTo;
       } catch {
-        /* seek interdit tant que la piste n’est pas prête */
+        /* seek interdit tant que la piste n'est pas prête */
       }
     };
 
@@ -162,9 +232,17 @@ export function WatchVideoPlayer({
     };
   }, [loggedIn, postHistory, durationSec]);
 
-  const srcType = hlsUrl.toLowerCase().includes(".m3u8")
-    ? "application/x-mpegURL"
-    : "video/mp4";
+  const handleVideoError = useCallback(() => setHasError(true), []);
+
+  if (hasError) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-black px-6 text-center">
+        <p className="text-sm text-white/70">
+          Vidéo temporairement indisponible — réessaie plus tard.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <video
@@ -174,9 +252,7 @@ export function WatchVideoPlayer({
       playsInline
       poster={poster ?? undefined}
       preload="metadata"
-    >
-      <source src={hlsUrl} type={srcType} />
-      Lecture impossible dans ce navigateur.
-    </video>
+      onError={handleVideoError}
+    />
   );
 }

@@ -78,8 +78,6 @@ export default async function WatchPage({ params }: Props) {
     notFound();
   }
 
-  console.log("[WatchPage] rendering slugId:", slugId, "hlsUrl:", video.hlsUrl?.slice(0, 60), "thumb:", video.thumbnailUrl?.slice(0, 60));
-
   let channelFeed: Awaited<ReturnType<typeof fetchChannelVideosPage>>;
   try {
     channelFeed = await fetchChannelVideosPage(video.channel.handle);
